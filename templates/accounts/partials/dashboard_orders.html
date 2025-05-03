@@ -1,0 +1,69 @@
+{% load math_filters %}
+{% load custom_filters %}
+
+<div class="space-y-4">
+    {% for order in recent_orders %}
+    <div class="bg-gray-800/50 hover:bg-gray-700/50 transition-all duration-200 rounded-lg p-5 border border-gray-700 hover:border-food-gold/30 shadow-md hover:shadow-lg">
+        <div class="flex flex-col md:flex-row justify-between items-start gap-4">
+            <div class="flex-1">
+                <div class="flex items-center">
+                    <div class="font-medium text-lg">Order #{{ order.id }}</div>
+                    <span class="ml-3 px-2 py-1 rounded-full text-xs
+                        {% if order.status == 'PENDING' %}bg-yellow-900/70 text-yellow-300 border border-yellow-600/30
+                        {% elif order.status == 'PREPARING' %}bg-blue-900/70 text-blue-300 border border-blue-600/30
+                        {% elif order.status == 'READY' %}bg-green-900/70 text-green-300 border border-green-600/30
+                        {% elif order.status == 'COMPLETED' %}bg-gray-700/70 text-gray-300 border border-gray-500/30
+                        {% elif order.status == 'CANCELLED' %}bg-red-900/70 text-red-300 border border-red-600/30{% endif %}">
+                        {{ order.get_status_display }}
+                    </span>
+                </div>
+                <div class="text-sm text-gray-400 mt-2 flex items-center">
+                    <i class="far fa-calendar-alt mr-2"></i>
+                    {{ order.created_at|date:"M d, Y" }} at {{ order.created_at|time:"g:i A" }}
+                </div>
+                
+                <!-- Order Items Preview -->
+                <div class="mt-3 bg-gray-900/30 rounded-lg p-3 border border-gray-700">
+                    <div class="text-xs text-gray-400 mb-2 flex items-center">
+                        <i class="fas fa-utensils mr-2"></i>
+                        <span>Order Items</span>
+                    </div>
+                    <div class="space-y-1">
+                        {% for item in order.order_items.all|slice:":3" %}
+                        <div class="text-sm flex justify-between">
+                            <div>{{ item.quantity }}x {{ item.menu_item.name }}</div>
+                            <div class="text-food-gold">₱{{ item.price|floatformat:2 }}</div>
+                        </div>
+                        {% endfor %}
+                        {% if order.order_items.count > 3 %}
+                        <div class="text-xs text-gray-500 mt-1">+ {{ order.order_items.count|add:"-3" }} more item(s)</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="w-full md:w-auto flex flex-col items-end">
+                <div class="bg-food-gold/10 px-4 py-3 rounded-lg border border-food-gold/20 text-center">
+                    <div class="text-xs text-gray-400 mb-1">Total Amount</div>
+                    <div class="font-bold text-2xl text-food-gold">₱{{ order.total_amount|floatformat:2 }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ order.order_items.count }} item(s)</div>
+                </div>
+                <a href="{% url 'view_customer_order' order.id %}" class="text-food-gold hover:text-food-gold-light text-sm mt-3 inline-block transition-colors duration-200 px-4 py-2 border border-food-gold/30 hover:border-food-gold rounded-md hover:bg-food-gold/10 w-full md:w-auto text-center">
+                    <i class="fas fa-eye mr-1"></i> View Details
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-10 text-gray-400 bg-gray-800/30 rounded-lg border border-gray-700">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-700/50 flex items-center justify-center">
+            <i class="fas fa-shopping-cart text-gray-500 text-3xl"></i>
+        </div>
+        <p class="text-lg mb-2">You haven't placed any orders yet</p>
+        <p class="text-sm text-gray-500 mb-4">Browse our menu and place your first order today!</p>
+        <a href="{% url 'menu' %}" class="text-food-gold hover:text-food-gold-light mt-2 inline-block px-6 py-3 border border-food-gold rounded-md transition-all duration-200 hover:bg-food-gold hover:text-gray-900">
+            Browse Menu <i class="fas fa-arrow-right ml-2"></i>
+        </a>
+    </div>
+    {% endfor %}
+</div>

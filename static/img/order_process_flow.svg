@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="900" height="340" viewBox="0 0 900 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .stage { font: bold 16px sans-serif; fill: #222; }
+    .role { font: italic 14px sans-serif; fill: #666; }
+    .arrow { stroke: #F9A826; stroke-width: 3; marker-end: url(#arrowhead); }
+    .box { fill: #FFF8E1; stroke: #F9A826; stroke-width: 2; rx: 16; }
+    .active { fill: #F9A826; }
+    .actor { font: bold 14px sans-serif; fill: #2B6CB0; }
+    .label { font: 13px sans-serif; fill: #333; }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#F9A826"/>
+    </marker>
+  </defs>
+  <!-- Stages -->
+  <rect x="40" y="60" width="140" height="60" class="box"/>
+  <text x="110" y="90" text-anchor="middle" class="stage">Order Placed</text>
+  <text x="110" y="110" text-anchor="middle" class="role">Customer</text>
+
+  <rect x="220" y="60" width="140" height="60" class="box"/>
+  <text x="290" y="90" text-anchor="middle" class="stage">Payment</text>
+  <text x="290" y="110" text-anchor="middle" class="role">Customer/Cashier</text>
+
+  <rect x="400" y="60" width="140" height="60" class="box"/>
+  <text x="470" y="90" text-anchor="middle" class="stage">Preparing</text>
+  <text x="470" y="110" text-anchor="middle" class="role">Cashier/Kitchen</text>
+
+  <rect x="580" y="60" width="140" height="60" class="box"/>
+  <text x="650" y="90" text-anchor="middle" class="stage">Ready</text>
+  <text x="650" y="110" text-anchor="middle" class="role">Cashier</text>
+
+  <rect x="760" y="60" width="140" height="60" class="box"/>
+  <text x="830" y="90" text-anchor="middle" class="stage">Completed</text>
+  <text x="830" y="110" text-anchor="middle" class="role">Customer</text>
+
+  <!-- Arrows -->
+  <line x1="180" y1="90" x2="220" y2="90" class="arrow"/>
+  <line x1="360" y1="90" x2="400" y2="90" class="arrow"/>
+  <line x1="540" y1="90" x2="580" y2="90" class="arrow"/>
+  <line x1="720" y1="90" x2="760" y2="90" class="arrow"/>
+
+  <!-- Cancelled Path -->
+  <rect x="400" y="200" width="140" height="60" class="box"/>
+  <text x="470" y="230" text-anchor="middle" class="stage">Cancelled</text>
+  <text x="470" y="250" text-anchor="middle" class="role">Customer/Manager/Cashier</text>
+  <line x1="110" y1="120" x2="470" y2="200" class="arrow" stroke-dasharray="6,6"/>
+  <text x="270" y="180" text-anchor="middle" class="label">Cancel (any stage)</text>
+
+  <!-- Manager Oversight -->
+  <text x="470" y="20" text-anchor="middle" class="actor">Manager: Can oversee, confirm reservations, and resolve issues at any stage</text>
+</svg>

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Menu - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block content %}
+<section class="py-20 bg-food-black">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-16">
+            <h1 class="text-4xl md:text-6xl font-bold mb-4">
+                <span class="gold-text-gradient">Our Menu</span>
+            </h1>
+            <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                Explore our full selection of dishes crafted with passion and the finest ingredients
+            </p>
+        </div>
+
+        <!-- Search Bar - Sticky -->
+        <div id="menu-search-container" class="sticky top-20 z-40 py-3 bg-food-black/95 backdrop-blur-sm border-b border-food-gold/20 mb-8 shadow-lg">
+            <div class="relative max-w-md mx-auto">
+                <input type="text" id="menu-search" placeholder="Search our menu..." class="w-full bg-black/50 border-2 border-food-gold/50 rounded-full py-2 px-4 pl-10 text-white placeholder-gray-400 focus:outline-none focus:border-food-gold focus:ring-2 focus:ring-food-gold/30 transition-all duration-300">
+                <i class="fas fa-search absolute left-4 top-3 text-food-gold"></i>
+            </div>
+        </div>
+
+        <!-- Menu Categories -->
+        <div class="flex flex-wrap justify-center gap-4 mb-12">
+            <button hx-get="{% url 'filter_menu' %}"
+                    hx-target="#menu-items-container"
+                    hx-swap="innerHTML"
+                    class="bg-gradient-to-r from-food-gold to-food-orange text-white font-bold py-2 px-6 rounded-full hover:from-food-red hover:to-food-gold transition duration-300 hover-scale shadow-lg">
+                All
+            </button>
+            {% for category in categories %}
+            <button hx-get="{% url 'filter_menu' %}?category={{ category.id }}"
+                    hx-target="#menu-items-container"
+                    hx-swap="innerHTML"
+                    class="bg-transparent border-2 border-food-gold text-white font-bold py-2 px-6 rounded-full hover:bg-food-gold hover:text-food-black transition duration-300 hover-scale shadow-lg">
+                {{ category.name }}
+            </button>
+            {% endfor %}
+        </div>
+
+        <!-- Menu Items Grid Container -->
+        <div id="menu-items-container">
+            {% include 'components/home/menu_items_grid.html' %}
+        </div>
+
+        <!-- Cart Count Indicator -->
+        <div id="cart-notification" class="fixed bottom-6 right-6 bg-food-gold text-food-black p-4 rounded-full shadow-lg transform transition-transform duration-300 scale-0 z-50">
+            Item added to cart!
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === 'cart-count') {
+            const notification = document.getElementById('cart-notification');
+            notification.style.display = 'block';
+            notification.style.opacity = '1';
+
+            setTimeout(function() {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 200);
+            }, 1500);
+        }
+
+        // Re-initialize search functionality after HTMX content swap
+        if (event.detail.target.id === 'menu-items-container') {
+            initializeSearch();
+        }
+    });
+
+    // Search functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeSearch();
+    });
+
+    function initializeSearch() {
+        const searchInput = document.getElementById('menu-search');
+        const menuItems = document.querySelectorAll('.menu-item');
+
+        if (searchInput && menuItems.length > 0) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+
+                menuItems.forEach(item => {
+                    const itemName = item.querySelector('h3').textContent.toLowerCase();
+                    const itemDescription = item.querySelector('.text-gray-400')?.textContent.toLowerCase() || '';
+
+                    if (itemName.includes(searchTerm) || itemDescription.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+    }
+</script>
+{% endblock extra_scripts %}

@@ -1,0 +1,268 @@
+{% extends 'cashier/base.html' %}
+{% load static %}
+
+{% block title %}Process Reservation - Cashier Dashboard{% endblock title %}
+
+{% block page_title %}Process Reservation{% endblock page_title %}
+{% block page_subtitle %}Create an order for reservation #{{ reservation.id }}{% endblock page_subtitle %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Reservation Details -->
+    <div class="card p-6">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h2 class="text-xl font-bold mb-1">Reservation #{{ reservation.id }}</h2>
+                <p class="text-gray-400">{{ reservation.date|date:"F d, Y" }} at {{ reservation.time|time:"H:i" }}</p>
+            </div>
+            <span class="px-3 py-1 rounded-full {% if reservation.status == 'COMPLETED' %}bg-blue-900 text-blue-300{% elif reservation.status == 'CONFIRMED' %}bg-green-900 text-green-300{% elif reservation.status == 'PENDING' %}bg-yellow-900 text-yellow-300{% else %}bg-red-900 text-red-300{% endif %} text-sm font-medium">
+                {{ reservation.get_status_display }}
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <h3 class="text-lg font-medium mb-3">Guest Information</h3>
+                <div class="space-y-2">
+                    <div class="flex">
+                        <span class="w-24 text-gray-500">Name:</span>
+                        <span class="text-white">{{ reservation.name }}</span>
+                    </div>
+                    <div class="flex">
+                        <span class="w-24 text-gray-500">Email:</span>
+                        <span class="text-white">{{ reservation.email }}</span>
+                    </div>
+                    <div class="flex">
+                        <span class="w-24 text-gray-500">Phone:</span>
+                        <span class="text-white">{{ reservation.phone }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-medium mb-3">Reservation Details</h3>
+                <div class="space-y-2">
+                    <div class="flex">
+                        <span class="w-24 text-gray-500">Party Size:</span>
+                        <span class="text-white">{{ reservation.party_size }} people</span>
+                    </div>
+                    <div class="flex">
+                        <span class="w-24 text-gray-500">Table:</span>
+                        <span class="text-white">
+                            {% if reservation.table_number %}
+                            Table {{ reservation.table_number }}
+                            {% else %}
+                            Not assigned
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex">
+                        <span class="w-24 text-gray-500">Created:</span>
+                        <span class="text-white">{{ reservation.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if reservation.prepare_ahead %}
+        <div class="mb-6">
+            <h3 class="text-lg font-medium mb-3 flex items-center">
+                <i class="fas fa-clock text-yellow-400 mr-2"></i> Prepare Food Ahead
+            </h3>
+            <div class="bg-yellow-900/30 p-4 rounded-lg border border-yellow-800">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle text-yellow-400 mt-1 mr-3"></i>
+                    <div>
+                        <p class="text-yellow-300 font-medium">Customer requested food to be prepared ahead of time</p>
+                        <p class="text-gray-300 text-sm mt-1">Please prepare the food 20 minutes before the reservation time ({{ reservation.time|time:"H:i" }})</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if reservation.special_requests %}
+        <div class="mb-6">
+            <h3 class="text-lg font-medium mb-3">Special Requests</h3>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <div id="special-requests-content">
+                    <p class="text-gray-300">{{ reservation.special_requests|linebreaks }}</p>
+                </div>
+
+                {% if '[MENU_ITEMS_DATA:' in reservation.special_requests %}
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const specialRequests = `{{ reservation.special_requests|escapejs }}`;
+                        const menuItemsDataStart = specialRequests.indexOf('[MENU_ITEMS_DATA:');
+
+                        if (menuItemsDataStart >= 0) {
+                            // Get the text before the menu items data
+                            const cleanText = specialRequests.substring(0, menuItemsDataStart).trim();
+
+                            // Update the special requests content
+                            if (cleanText) {
+                                document.getElementById('special-requests-content').innerHTML =
+                                    `<p class="text-gray-300">${cleanText.replace(/\n/g, '<br>')}</p>`;
+                            } else {
+                                document.getElementById('special-requests-content').innerHTML =
+                                    `<p class="text-gray-500 italic">No additional special requests</p>`;
+                            }
+                        }
+                    });
+                </script>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if reservation.has_menu_items %}
+        <div class="mb-6">
+            <h3 class="text-lg font-medium mb-3 flex items-center">
+                <i class="fas fa-utensils text-food-gold mr-2"></i> Pre-ordered Menu Items
+            </h3>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                {% with reservation_items=reservation.reservation_items.all %}
+                    {% if reservation_items %}
+                        <div class="space-y-3">
+                            {% for item in reservation_items %}
+                            <div class="flex justify-between items-center p-3 bg-gray-700 rounded-lg">
+                                <div>
+                                    <p class="text-white font-medium">{{ item.menu_item.name }}</p>
+                                    <p class="text-gray-400 text-sm">₱{{ item.price }} × {{ item.quantity }}</p>
+                                    {% if item.special_instructions %}
+                                    <p class="text-gray-400 text-xs mt-1">Note: {{ item.special_instructions }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-food-gold font-bold">
+                                    ₱{{ item.subtotal }}
+                                </div>
+                            </div>
+                            {% endfor %}
+
+                            <!-- Total row -->
+                            <div class="flex justify-between items-center p-3 bg-gray-900 rounded-lg mt-4 font-bold">
+                                <p class="text-white">Total</p>
+                                <p class="text-food-gold">₱{{ reservation.total_amount }}</p>
+                            </div>
+
+                            <!-- Add note -->
+                            <div class="mt-3 text-gray-400 text-sm">
+                                These items will be automatically added to the order when you process this reservation.
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-gray-300 mb-2">The customer has pre-ordered menu items with this reservation.</p>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if reservation.total_amount > 0 and not reservation.has_menu_items %}
+        <div class="mb-6">
+            <h3 class="text-lg font-medium mb-3">Reservation Fee</h3>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <div class="flex justify-between items-center">
+                    <span class="text-white font-bold">Total Amount:</span>
+                    <span class="text-food-gold font-bold text-xl">₱{{ reservation.total_amount }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="mb-6">
+            <h3 class="text-lg font-medium mb-3">Payment Information</h3>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-white">Payment Status:</span>
+                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {% if reservation.payment_status == 'PAID' %}bg-green-900 text-green-300{% elif reservation.payment_status == 'PARTIALLY_PAID' %}bg-yellow-900 text-yellow-300{% else %}bg-red-900 text-red-300{% endif %}">
+                        {{ reservation.get_payment_status_display }}
+                    </span>
+                </div>
+                {% if reservation.payment_status != 'PAID' %}
+                <div class="text-yellow-300 text-xs mt-2">Payment must be completed before processing this reservation.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Process Reservation Action -->
+        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <h3 class="text-lg font-bold mb-4 flex items-center">
+                <i class="fas fa-utensils mr-2 text-food-gold"></i> Process This Reservation
+            </h3>
+
+            <div class="mb-4">
+                <p class="text-gray-300">Processing this reservation will:</p>
+                <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-400">
+                    <li>Create a new order linked to this reservation</li>
+                    <li>Include any pre-ordered menu items</li>
+                    <li>Mark the reservation as completed</li>
+                    <li>Generate a receipt for the order</li>
+                </ul>
+            </div>
+
+            {% if reservation.status == 'CONFIRMED' and reservation.payment_status in 'PAID,PARTIALLY_PAID' %}
+                <div class="bg-green-900/30 p-4 rounded-lg border border-green-800 mb-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-check-circle text-green-400 mt-1 mr-3 text-lg"></i>
+                        <div>
+                            <p class="text-green-300 font-medium">This reservation is ready to be processed</p>
+                            <p class="text-gray-400 text-sm mt-1">Payment has been verified and the reservation is confirmed.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="flex justify-between items-center">
+                        <a href="{% url 'cashier_reservations_list' %}" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition duration-300">
+                            <i class="fas fa-arrow-left mr-2"></i> Back to Reservations
+                        </a>
+                        <button type="submit" class="px-5 py-3 bg-food-gold text-white rounded-lg hover:bg-food-gold-light transition duration-300 font-bold">
+                            <i class="fas fa-utensils mr-2"></i> Process Reservation
+                        </button>
+                    </div>
+                </form>
+            {% elif reservation.status == 'CONFIRMED' and reservation.payment_status not in 'PAID,PARTIALLY_PAID' %}
+                <div class="bg-yellow-900/30 p-4 rounded-lg border border-yellow-800 mb-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 mt-1 mr-3 text-lg"></i>
+                        <div>
+                            <p class="text-yellow-300 font-medium">Payment required before processing</p>
+                            <p class="text-gray-400 text-sm mt-1">This reservation cannot be processed until payment is completed or at least partially paid.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <a href="{% url 'cashier_reservations_list' %}" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition duration-300">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Reservations
+                    </a>
+                    <a href="{% url 'pending_reservation_payments' %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300">
+                        <i class="fas fa-money-bill-wave mr-2"></i> Check Pending Payments
+                    </a>
+                </div>
+            {% else %}
+                <div class="bg-red-900/30 p-4 rounded-lg border border-red-800 mb-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-times-circle text-red-400 mt-1 mr-3 text-lg"></i>
+                        <div>
+                            <p class="text-red-300 font-medium">This reservation cannot be processed</p>
+                            <p class="text-gray-400 text-sm mt-1">The reservation must be in CONFIRMED status to be processed.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between">
+                    <a href="{% url 'cashier_reservations_list' %}" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition duration-300">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Reservations
+                    </a>
+                    <button class="px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed" disabled>
+                        <i class="fas fa-utensils mr-2"></i> Process Reservation
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}

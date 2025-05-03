@@ -1,0 +1,26 @@
+{% extends 'accounts/customer_base.html' %}
+{% block title %}Reservation Feedback{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto mt-10 bg-gray-900 p-8 rounded-xl shadow-lg border border-gray-800">
+    <h2 class="text-2xl font-bold mb-4 text-food-gold">Leave Feedback for Your Reservation</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label for="rating" class="block text-gray-300 font-semibold mb-1">Rating</label>
+            <select id="rating" name="rating" required class="w-full p-2 rounded bg-gray-800 text-white">
+                <option value="">Select a rating</option>
+                <option value="5">5 - Excellent</option>
+                <option value="4">4 - Very Good</option>
+                <option value="3">3 - Good</option>
+                <option value="2">2 - Fair</option>
+                <option value="1">1 - Poor</option>
+            </select>
+        </div>
+        <div class="mb-4">
+            <label for="comments" class="block text-gray-300 font-semibold mb-1">Comments</label>
+            <textarea id="comments" name="comments" rows="4" class="w-full p-2 rounded bg-gray-800 text-white" placeholder="Share your experience..."></textarea>
+        </div>
+        <button type="submit" class="btn-primary w-full py-2 rounded-lg font-bold">Submit Feedback</button>
+    </form>
+</div>
+{% endblock %}

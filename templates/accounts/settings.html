@@ -1,0 +1,146 @@
+{% extends 'accounts/dashboard_base.html' %}
+
+{% block title %}Settings - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block page_title %}Account Settings{% endblock page_title %}
+{% block page_subtitle %}Manage your account security and preferences{% endblock page_subtitle %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Security Settings -->
+    <div class="lg:col-span-2">
+        <div class="card p-6 shadow-lg border border-gray-800 mb-8">
+            <h2 class="text-xl font-bold text-white mb-6">Change Password</h2>
+
+            <form method="post" action="{% url 'user_settings' %}">
+                {% csrf_token %}
+                <div class="mb-6">
+                    <label for="old_password" class="block text-white font-medium mb-2">Current Password</label>
+                    <input type="password" id="old_password" name="old_password" required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-food-gold">
+                </div>
+
+                <div class="mb-6">
+                    <label for="new_password" class="block text-white font-medium mb-2">New Password</label>
+                    <input type="password" id="new_password" name="new_password" required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-food-gold">
+                    <p class="text-gray-500 text-sm mt-1">Password must be at least 8 characters long</p>
+                </div>
+
+                <div class="mb-6">
+                    <label for="confirm_password" class="block text-white font-medium mb-2">Confirm New Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-food-gold">
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="btn-primary px-6 py-3 rounded-lg">
+                        Update Password
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- QR Code Generator -->
+        <div class="card p-6 shadow-lg border border-gray-800 mb-8">
+            <h2 class="text-xl font-bold text-white mb-6">QR Code Generator</h2>
+
+            <div class="mb-6">
+                <label for="ip_address" class="block text-white font-medium mb-2">Enter IP Address and Port</label>
+                <div class="flex">
+                    <input type="text" id="ip_address" name="ip_address" placeholder="e.g. 192.168.1.34:8000"
+                        class="flex-1 bg-gray-800 border border-gray-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-food-gold">
+                    <button type="button" id="generate_qr" class="btn-primary ml-2 px-4 py-3 rounded-lg">
+                        Generate
+                    </button>
+                </div>
+                <p class="text-gray-500 text-sm mt-1">Enter your server IP address and port to generate a QR code for ordering</p>
+            </div>
+
+            <div id="qrcode_container" class="flex flex-col items-center justify-center p-4 bg-gray-800 rounded-lg border border-gray-700 hidden">
+                <div class="bg-white p-4 rounded-lg mb-4">
+                    <div id="qrcode" class="w-48 h-48 flex items-center justify-center"></div>
+                </div>
+                <p id="qr_url" class="text-gray-300 text-center break-all"></p>
+            </div>
+        </div>
+
+        <!-- Notification Settings -->
+
+    </div>
+
+    <!-- Settings Sidebar -->
+    <div class="space-y-6">
+        <!-- Quick Links -->
+
+
+        <!-- Account Actions -->
+
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Password validation
+        const newPasswordInput = document.getElementById('new_password');
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        const form = document.querySelector('form');
+
+        form.addEventListener('submit', function(e) {
+            if (newPasswordInput.value !== confirmPasswordInput.value) {
+                e.preventDefault();
+                alert('Passwords do not match');
+            }
+
+            if (newPasswordInput.value.length < 8) {
+                e.preventDefault();
+                alert('Password must be at least 8 characters long');
+            }
+        });
+
+        // QR Code Generator
+        const ipAddressInput = document.getElementById('ip_address');
+        const generateQrButton = document.getElementById('generate_qr');
+        const qrcodeContainer = document.getElementById('qrcode_container');
+        const qrcodeElement = document.getElementById('qrcode');
+        const qrUrlElement = document.getElementById('qr_url');
+
+        generateQrButton.addEventListener('click', function() {
+            const ipAddress = ipAddressInput.value.trim();
+
+            if (!ipAddress) {
+                alert('Please enter an IP address and port');
+                return;
+            }
+
+            // Format the URL
+            let url = ipAddress;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'http://' + url;
+            }
+
+            // Generate QR code
+            qrcodeElement.innerHTML = '';
+            const qr = qrcode(0, 'M');
+            qr.addData(url);
+            qr.make();
+            qrcodeElement.innerHTML = qr.createImgTag(5);
+
+            // Show the container and URL
+            qrcodeContainer.classList.remove('hidden');
+            qrUrlElement.textContent = url;
+        });
+
+        // Also generate QR code when pressing Enter in the input field
+        ipAddressInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                generateQrButton.click();
+            }
+        });
+    });
+</script>
+{% endblock extra_scripts %}

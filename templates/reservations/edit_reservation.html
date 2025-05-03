@@ -1,0 +1,385 @@
+{% extends 'accounts/customer_base.html' %}
+{% load static %}
+
+{% block title %}Edit Reservation - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block content %}
+<div class="space-y-8" x-data="reservationFormData()">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+        <div>
+            <h1 class="text-2xl font-bold">Edit Reservation</h1>
+            <p class="text-gray-400">Update your reservation details</p>
+        </div>
+        <a href="{% url 'my_reservations' %}" class="btn-secondary px-4 py-2 rounded-lg">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Reservations
+        </a>
+    </div>
+
+    <!-- Reservation Form -->
+    <div class="card p-6 shadow-lg border border-gray-800">
+        <form id="reservation-form" method="post" action="{% url 'edit_reservation' reservation.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="table_number" id="table_number" x-model="selectedTable">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div class="space-y-6">
+                    <!-- Personal Information -->
+                    <div>
+                        <h3 class="text-xl font-bold text-white mb-4">Personal Information</h3>
+
+                        <div class="form-group mb-4">
+                            <label class="block text-white font-medium mb-2">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.name.errors.0 }}</p>
+                            {% endif %}
+                            {% if form.name.help_text %}
+                            <p class="text-gray-500 text-xs mt-1">{{ form.name.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="block text-white font-medium mb-2">{{ form.email.label }}</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                            {% endif %}
+                            {% if form.email.help_text %}
+                            <p class="text-gray-500 text-xs mt-1">{{ form.email.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="block text-white font-medium mb-2">{{ form.phone.label }}</label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.phone.errors.0 }}</p>
+                            {% endif %}
+                            {% if form.phone.help_text %}
+                            <p class="text-gray-500 text-xs mt-1">{{ form.phone.help_text }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Reservation Details -->
+                    <div>
+                        <h3 class="text-xl font-bold text-white mb-4">Reservation Details</h3>
+
+                        <div class="form-group mb-4" x-data="datePicker()">
+                            <label class="block text-white font-medium mb-2">{{ form.date.label }}</label>
+                            <div class="relative">
+                                <input type="text" id="date_display"
+                                       class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-food-gold"
+                                       x-model="formattedDate"
+                                       @click="showDatepicker = !showDatepicker"
+                                       readonly>
+                                <div class="hidden">{{ form.date }}</div>
+                                <div class="absolute right-0 top-0 px-3 py-2 text-gray-400">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+
+                                <!-- Calendar Dropdown -->
+                                <div x-show="showDatepicker"
+                                     @click.away="showDatepicker = false"
+                                     class="absolute z-10 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-4 w-64">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <button type="button" @click="prevMonth" class="text-gray-400 hover:text-white">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                        <div class="text-white font-medium" x-text="monthYearText"></div>
+                                        <button type="button" @click="nextMonth" class="text-gray-400 hover:text-white">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Days of week -->
+                                    <div class="grid grid-cols-7 gap-1 mb-2">
+                                        <template x-for="day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']">
+                                            <div class="text-center text-gray-500 text-xs py-1" x-text="day"></div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Calendar days -->
+                                    <div class="grid grid-cols-7 gap-1">
+                                        <template x-for="blankday in blankdays">
+                                            <div class="text-center text-gray-600 text-sm py-1"></div>
+                                        </template>
+                                        <template x-for="(date, dateIndex) in days" :key="dateIndex">
+                                            <div class="text-center text-sm">
+                                                <button type="button"
+                                                        @click="selectDate(date)"
+                                                        x-text="date"
+                                                        class="w-8 h-8 rounded-full focus:outline-none transition-colors duration-200"
+                                                        :class="{
+                                                            'bg-food-gold text-black font-bold': isSelectedDate(date),
+                                                            'text-gray-400 hover:bg-gray-700': !isSelectedDate(date) && !isToday(date) && isDateSelectable(date),
+                                                            'text-white bg-gray-700': isToday(date) && !isSelectedDate(date),
+                                                            'text-gray-600 cursor-not-allowed': !isDateSelectable(date)
+                                                        }"
+                                                        :disabled="!isDateSelectable(date)">
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if form.date.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.date.errors.0 }}</p>
+                            {% endif %}
+                            {% if form.date.help_text %}
+                            <p class="text-gray-500 text-xs mt-1">{{ form.date.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="block text-white font-medium mb-2">{{ form.time.label }}</label>
+                            {{ form.time }}
+                            {% if form.time.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.time.errors.0 }}</p>
+                            {% endif %}
+                            {% if form.time.help_text %}
+                            <p class="text-gray-500 text-xs mt-1">{{ form.time.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="block text-white font-medium mb-2">{{ form.party_size.label }}</label>
+                            {{ form.party_size }}
+                            {% if form.party_size.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.party_size.errors.0 }}</p>
+                            {% endif %}
+                            {% if form.party_size.help_text %}
+                            <p class="text-gray-500 text-xs mt-1">{{ form.party_size.help_text }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="block text-white font-medium mb-2">{{ form.special_requests.label }}</label>
+                            {{ form.special_requests }}
+                            {% if form.special_requests.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.special_requests.errors.0 }}</p>
+                            {% endif %}
+                            {% if form.special_requests.help_text %}
+                            <p class="text-gray-500 text-xs mt-1">{{ form.special_requests.help_text }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Table Selection -->
+                <div>
+                    <h3 class="text-xl font-bold text-white mb-4">Table Selection</h3>
+                    <div class="bg-gray-900 p-4 rounded-lg">
+                        <p class="text-gray-400 mb-4">Select a table for your reservation:</p>
+
+                        <!-- Table Layout -->
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            {% for i in "123456789"|make_list %}
+                            <div class="relative">
+                                <input type="radio" name="table_radio" id="table_{{ i }}" value="{{ i }}"
+                                       class="absolute opacity-0 w-full h-full cursor-pointer z-10"
+                                       @click="selectedTable = '{{ i }}'"
+                                       {% if reservation.table_number == i %}checked{% endif %}>
+                                <label for="table_{{ i }}"
+                                       class="block p-4 rounded-lg border-2 text-center cursor-pointer transition-all duration-200
+                                              {% if i in occupied_tables %}
+                                              bg-red-900/50 border-red-700 text-red-300 cursor-not-allowed
+                                              {% else %}
+                                              bg-gray-800 border-gray-700 text-white hover:border-food-gold
+                                              {% endif %}"
+                                       :class="{'border-food-gold bg-food-gold/20': selectedTable === '{{ i }}'}">
+                                    <div class="text-xl font-bold mb-1">Table {{ i }}</div>
+                                    <div class="text-xs">
+                                        {% if i in occupied_tables %}
+                                        <span class="text-red-300">Occupied</span>
+                                        {% else %}
+                                        <span class="text-green-300">Available</span>
+                                        {% endif %}
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-green-300 rounded-full mr-2"></div>
+                                <span class="text-gray-300 text-sm">Available</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-red-300 rounded-full mr-2"></div>
+                                <span class="text-gray-300 text-sm">Occupied</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-food-gold rounded-full mr-2"></div>
+                                <span class="text-gray-300 text-sm">Selected</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Note about Table Reservation -->
+                    <div class="mt-4 p-4 bg-gray-900 rounded-lg text-gray-300 text-center border border-gray-700">
+                        <i class="fas fa-info-circle text-food-gold mr-2"></i>
+                        <strong>Note:</strong> You are making a table reservation only. You can order food when you arrive at the restaurant.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="mt-8 flex justify-end">
+                <button type="submit" class="btn-primary px-6 py-3 rounded-lg">
+                    <i class="fas fa-save mr-2"></i> Update Reservation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+<script>
+    // Alpine.js component initialization
+    function reservationFormData() {
+        return {
+            selectedTable: '{{ reservation.table_number|default:"" }}'
+        };
+    }
+
+    // Date picker component
+    function datePicker() {
+        return {
+            showDatepicker: false,
+            datepickerValue: '{{ reservation.date|date:"Y-m-d" }}',
+            selectedDate: new Date('{{ reservation.date|date:"Y-m-d" }}'),
+            month: '',
+            year: '',
+            days: [],
+            blankdays: [],
+            formattedDate: '',
+
+            initDate() {
+                let reservationDate = new Date('{{ reservation.date|date:"Y-m-d" }}');
+                this.month = reservationDate.getMonth();
+                this.year = reservationDate.getFullYear();
+                this.selectedDate = reservationDate;
+                this.datepickerValue = this.formatDateForInput(reservationDate);
+                this.formattedDate = this.formatDateForDisplay(reservationDate);
+
+                // Set the hidden input value
+                document.getElementById('id_date').value = this.datepickerValue;
+            },
+
+            formatDateForInput(date) {
+                // Format as YYYY-MM-DD for the hidden input
+                let month = (date.getMonth() + 1).toString().padStart(2, '0');
+                let day = date.getDate().toString().padStart(2, '0');
+                return `${date.getFullYear()}-${month}-${day}`;
+            },
+
+            formatDateForDisplay(date) {
+                // Format as Month DD, YYYY for display
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                return date.toLocaleDateString('en-US', options);
+            },
+
+            isToday(day) {
+                const today = new Date();
+                return day === today.getDate() &&
+                       this.month === today.getMonth() &&
+                       this.year === today.getFullYear();
+            },
+
+            isSelectedDate(day) {
+                return day === this.selectedDate.getDate() &&
+                       this.month === this.selectedDate.getMonth() &&
+                       this.year === this.selectedDate.getFullYear();
+            },
+
+            isDateSelectable(day) {
+                // Only allow dates from today onwards
+                const today = new Date();
+                const checkDate = new Date(this.year, this.month, day);
+                return checkDate >= new Date(today.setHours(0, 0, 0, 0));
+            },
+
+            getNoOfDays() {
+                let daysInMonth = new Date(this.year, this.month + 1, 0).getDate();
+
+                // Find out the first day of the month
+                let firstDayOfMonth = new Date(this.year, this.month, 1).getDay();
+
+                let blankdaysArray = [];
+                for (let i = 0; i < firstDayOfMonth; i++) {
+                    blankdaysArray.push(i);
+                }
+
+                let daysArray = [];
+                for (let i = 1; i <= daysInMonth; i++) {
+                    daysArray.push(i);
+                }
+
+                this.blankdays = blankdaysArray;
+                this.days = daysArray;
+            },
+
+            selectDate(day) {
+                if (!this.isDateSelectable(day)) return;
+
+                this.selectedDate = new Date(this.year, this.month, day);
+                this.datepickerValue = this.formatDateForInput(this.selectedDate);
+                this.formattedDate = this.formatDateForDisplay(this.selectedDate);
+
+                // Set the hidden input value
+                document.getElementById('id_date').value = this.datepickerValue;
+
+                this.showDatepicker = false;
+            },
+
+            prevMonth() {
+                if (this.month === 0) {
+                    this.year--;
+                    this.month = 11;
+                } else {
+                    this.month--;
+                }
+                this.getNoOfDays();
+            },
+
+            nextMonth() {
+                if (this.month === 11) {
+                    this.year++;
+                    this.month = 0;
+                } else {
+                    this.month++;
+                }
+                this.getNoOfDays();
+            },
+
+            get monthYearText() {
+                const months = [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ];
+                return `${months[this.month]} ${this.year}`;
+            },
+
+            init() {
+                this.initDate();
+                this.getNoOfDays();
+            }
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set minimum date to today
+        const dateInput = document.getElementById('id_date');
+        if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.min = today;
+        }
+    });
+</script>
+{% endblock extra_scripts %}
+{% endblock content %}

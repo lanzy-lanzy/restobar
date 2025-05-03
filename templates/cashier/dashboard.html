@@ -1,0 +1,568 @@
+{% extends 'cashier/base.html' %}
+{% load math_filters %}
+{% load custom_filters %}
+
+{% block title %}Cashier Dashboard - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block page_title %}Cashier Dashboard{% endblock page_title %}
+{% block page_subtitle %}Today's orders and sales summary - {{ today_date|date:"F d, Y" }}{% endblock page_subtitle %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="stat-card p-6 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-gray-400 text-sm font-medium">Today's Sales</h3>
+                    <p class="text-2xl font-bold mt-1 text-green-400">{{ today_sales|currency }}</p>
+                    <div class="flex flex-col text-xs text-gray-500 mt-1">
+                        <span>Completed orders: {{ completed_orders_sales|currency }}</span>
+                        <span>Verified payments: {{ verified_payments_sales|currency }}</span>
+                        <span>Reservation payments: {{ reservation_payments_sales|currency }}</span>
+                    </div>
+                </div>
+                <div class="bg-green-900 p-3 rounded-full">
+                    <i class="fas fa-peso-sign text-green-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card p-6 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-gray-400 text-sm font-medium">Processed Orders</h3>
+                    <p class="text-2xl font-bold mt-1">{{ today_order_count }}</p>
+                    <div class="flex flex-col text-xs text-gray-500 mt-1">
+                        <span>Completed: {{ completed_orders_count }}</span>
+                        <span>With verified payments: {{ verified_payment_orders_count }}</span>
+                    </div>
+                </div>
+                <div class="bg-blue-900 p-3 rounded-full">
+                    <i class="fas fa-check-circle text-blue-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card p-6 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-gray-400 text-sm font-medium">Average Order</h3>
+                    <p class="text-2xl font-bold mt-1 text-food-gold">{{ avg_order_value|currency }}</p>
+                </div>
+                <div class="bg-food-gold bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-calculator text-food-gold text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
+
+        <!-- Two main process flows -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <!-- Walk-in Order Process -->
+            <div class="bg-gray-800 p-5 rounded-lg border-l-4 border-food-gold">
+                <h3 class="text-lg font-bold mb-3 flex items-center">
+                    <i class="fas fa-user-plus mr-2 text-food-gold"></i> Walk-in Order Process
+                </h3>
+                <p class="text-gray-400 mb-4">Create and manage orders for walk-in customers</p>
+                <div class="flex flex-col space-y-3">
+                    <a href="{% url 'new_order' %}" class="bg-food-gold hover:bg-food-gold-light text-white p-3 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-plus-circle mr-2"></i>
+                        <span class="font-medium">New Walk-in Order</span>
+                    </a>
+                    <a href="{% url 'cashier_orders_list' %}" class="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-clipboard-list mr-2"></i>
+                        <span class="font-medium">View All Orders</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Reservation Process -->
+            <div class="bg-gray-800 p-5 rounded-lg border-l-4 border-blue-500">
+                <h3 class="text-lg font-bold mb-3 flex items-center">
+                    <i class="fas fa-calendar-check mr-2 text-blue-500"></i> Reservation Process
+                </h3>
+                <p class="text-gray-400 mb-4">Process confirmed reservations and payments</p>
+                <div class="flex flex-col space-y-3">
+                    <a href="{% url 'cashier_reservations_list' %}?status=unprocessed" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-utensils mr-2"></i>
+                        <span class="font-medium">Process Reservations</span>
+                    </a>
+                    <a href="{% url 'pending_reservation_payments' %}" class="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-money-bill-wave mr-2"></i>
+                        <span class="font-medium">Verify Reservation Payments</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="{% url 'pending_payments' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-lg flex items-center justify-center">
+                <i class="fas fa-money-bill-wave mr-2 text-xl"></i>
+                <span class="font-medium">Pending GCash Payments</span>
+            </a>
+
+            <a href="{% url 'preparation_tracker' %}" class="bg-gray-700 hover:bg-gray-600 text-white p-4 rounded-lg flex items-center justify-center">
+                <i class="fas fa-tasks mr-2 text-xl"></i>
+                <span class="font-medium">Preparation Tracker</span>
+            </a>
+
+            <a href="{% url 'menu' %}" class="bg-gray-700 hover:bg-gray-600 text-white p-4 rounded-lg flex items-center justify-center">
+                <i class="fas fa-utensils mr-2 text-xl"></i>
+                <span class="font-medium">View Menu</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Pending GCash Payments -->
+    <div class="card p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Pending GCash Payments</h2>
+            <a href="{% url 'pending_payments' %}" class="text-blue-400 hover:text-blue-300 text-sm">
+                View All <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+
+        {% if pending_payments %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 border-b border-gray-800">
+                        <th class="pb-3">Order #</th>
+                        <th class="pb-3">Customer</th>
+                        <th class="pb-3">Amount</th>
+                        <th class="pb-3">Reference</th>
+                        <th class="pb-3">Date</th>
+                        <th class="pb-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in pending_payments|slice:":5" %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3">{{ payment.order.id }}</td>
+                        <td class="py-3">{{ payment.order.user.get_full_name }}</td>
+                        <td class="py-3">₱{{ payment.amount|floatformat:2 }}</td>
+                        <td class="py-3">{{ payment.reference_number }}</td>
+                        <td class="py-3">{{ payment.payment_date|date:"M d, H:i" }}</td>
+                        <td class="py-3">
+                            <div class="flex space-x-2">
+                                <a href="{% url 'verify_payment' payment.id %}" class="text-blue-400 hover:text-blue-300" title="Verify Payment">
+                                    <i class="fas fa-check-circle"></i>
+                                </a>
+                                <a href="{% url 'view_payment' payment.id %}" class="text-food-gold hover:text-food-gold-light" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-gray-800 rounded-lg p-6 text-center">
+            <p class="text-gray-400">No pending GCash payments at the moment.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Unprocessed Reservations -->
+    <div class="card p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Confirmed Reservations</h2>
+            {% if unprocessed_reservations_count > 0 %}
+            <a href="{% url 'cashier_reservations_list' %}?status=unprocessed" class="bg-food-gold hover:bg-food-gold-light text-black px-4 py-2 rounded-lg transition duration-300">
+                <i class="fas fa-utensils mr-2"></i> Process Reservations
+            </a>
+            {% else %}
+            <a href="{% url 'cashier_reservations_list' %}" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-300">
+                <i class="fas fa-calendar-alt mr-2"></i> View All Reservations
+            </a>
+            {% endif %}
+        </div>
+
+        {% if unprocessed_reservations %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 border-b border-gray-800">
+                        <th class="pb-3">Time</th>
+                        <th class="pb-3">Guest</th>
+                        <th class="pb-3">Party Size</th>
+                        <th class="pb-3">Table</th>
+                        <th class="pb-3">Payment</th>
+                        <th class="pb-3">Menu Items</th>
+                        <th class="pb-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reservation in unprocessed_reservations|slice:":5" %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3 text-white font-medium">{{ reservation.time|time:"H:i" }}</td>
+                        <td class="py-3">
+                            <div>{{ reservation.name }}</div>
+                            <div class="text-xs text-gray-500">{{ reservation.phone }}</div>
+                        </td>
+                        <td class="py-3">{{ reservation.party_size }} people</td>
+                        <td class="py-3">
+                            {% if reservation.table_number %}
+                            Table {{ reservation.table_number }}
+                            {% else %}
+                            Not assigned
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium {% if reservation.payment_status == 'PAID' %}bg-green-900 text-green-300{% elif reservation.payment_status == 'PARTIALLY_PAID' %}bg-yellow-900 text-yellow-300{% else %}bg-red-900 text-red-300{% endif %}">
+                                {{ reservation.get_payment_status_display }}
+                            </span>
+                        </td>
+                        <td class="py-3">
+                            {% if reservation.total_amount > 0 %}
+                            <span class="text-food-gold font-medium">₱{{ reservation.total_amount }}</span>
+                            {% else %}
+                            <span class="text-gray-500">None</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            <a href="{% url 'process_reservation' reservation.id %}" class="text-food-gold hover:text-food-gold-light">
+                                <i class="fas fa-utensils mr-1"></i> Process
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-gray-800 rounded-lg p-6 text-center">
+            <p class="text-gray-400">No unprocessed reservations at the moment.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pending Orders -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">Pending Orders</h2>
+
+        {% if pending_orders %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 border-b border-gray-800">
+                        <th class="pb-3">Order #</th>
+                        <th class="pb-3">Customer</th>
+                        <th class="pb-3">Type</th>
+                        <th class="pb-3">Time</th>
+                        <th class="pb-3">Amount</th>
+                        <th class="pb-3">Status</th>
+                        <th class="pb-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in pending_orders %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3">{{ order.id }}</td>
+                        <td class="py-3">{{ order.customer_name }}</td>
+                        <td class="py-3">
+                            {% if order.order_type == 'DINE_IN' %}
+                            <span class="bg-blue-900 text-blue-300 text-xs px-2 py-1 rounded-full">Dine In</span>
+                            {% elif order.order_type == 'TAKEOUT' or order.order_type == 'PICKUP' %}
+                            <span class="bg-green-900 text-green-300 text-xs px-2 py-1 rounded-full">Takeout</span>
+                            {% elif order.order_type == 'DELIVERY' %}
+                            <span class="bg-purple-900 text-purple-300 text-xs px-2 py-1 rounded-full">Delivery</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">{{ order.created_at|date:"H:i" }}</td>
+                        <td class="py-3">₱{{ order.total_amount }}</td>
+                        <td class="py-3">
+                            {% if order.status == 'PENDING' %}
+                            <span class="bg-yellow-900 text-yellow-300 text-xs px-2 py-1 rounded-full">Pending</span>
+                            {% elif order.status == 'PREPARING' %}
+                            <span class="bg-blue-900 text-blue-300 text-xs px-2 py-1 rounded-full">Preparing</span>
+                            {% elif order.status == 'READY' %}
+                            <span class="bg-indigo-900 text-indigo-300 text-xs px-2 py-1 rounded-full">Ready</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            <div class="flex space-x-2">
+                                <a href="{% url 'view_order' order.id %}" class="text-food-gold hover:text-food-gold-light" title="View Order">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+
+                                {% if order.status == 'PENDING' %}
+                                <button type="button" onclick="updateOrderStatus({{ order.id }}, 'PREPARING')" class="text-yellow-400 hover:text-yellow-300" title="Start Preparing">
+                                    <i class="fas fa-utensils"></i>
+                                </button>
+                                {% elif order.status == 'PREPARING' %}
+                                <button type="button" onclick="updateOrderStatus({{ order.id }}, 'READY')" class="text-indigo-400 hover:text-indigo-300" title="Mark as Ready">
+                                    <i class="fas fa-bell"></i>
+                                </button>
+                                {% elif order.status == 'READY' %}
+                                <button type="button" onclick="updateOrderStatus({{ order.id }}, 'COMPLETED')" class="text-green-400 hover:text-green-300" title="Complete Order">
+                                    <i class="fas fa-check-circle"></i>
+                                </button>
+                                {% endif %}
+
+                                <a href="{% url 'print_receipt' order.id %}" class="text-blue-400 hover:text-blue-300" title="Print Receipt">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-gray-800 rounded-lg p-6 text-center">
+            <p class="text-gray-400">No pending orders at the moment.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Today's Top Items -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">Today's Top Selling Items</h2>
+
+        {% if top_items %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-gray-400 border-b border-gray-800">
+                            <th class="pb-3">Item</th>
+                            <th class="pb-3">Quantity</th>
+                            <th class="pb-3">Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in top_items %}
+                        <tr class="border-b border-gray-800">
+                            <td class="py-3">{{ item.menu_item__name }}</td>
+                            <td class="py-3">{{ item.total_quantity }}</td>
+                            <td class="py-3">{{ item.total_sales|currency }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="h-64">
+                    <!-- Placeholder for chart - in a real app, you'd use Chart.js or similar -->
+                    <div class="h-full flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="fas fa-chart-pie text-4xl text-gray-600 mb-2"></i>
+                            <p class="text-gray-400">Sales distribution chart would appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-gray-800 rounded-lg p-6 text-center">
+            <p class="text-gray-400">No sales data available for today.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recently Completed Reservations -->
+    <div class="card p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Recently Completed Reservations</h2>
+            <a href="{% url 'cashier_reservations_list' %}?status=processed" class="text-indigo-400 hover:text-indigo-300 text-sm">
+                View All <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+
+        {% if completed_reservations %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 border-b border-gray-800">
+                        <th class="pb-3">Time</th>
+                        <th class="pb-3">Guest</th>
+                        <th class="pb-3">Party Size</th>
+                        <th class="pb-3">Table</th>
+                        <th class="pb-3">Payment</th>
+                        <th class="pb-3">Processed By</th>
+                        <th class="pb-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reservation in completed_reservations|slice:":5" %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3 text-white font-medium">{{ reservation.time|time:"H:i" }}</td>
+                        <td class="py-3">
+                            <div>{{ reservation.name }}</div>
+                            <div class="text-xs text-gray-500">{{ reservation.phone }}</div>
+                        </td>
+                        <td class="py-3">{{ reservation.party_size }} people</td>
+                        <td class="py-3">
+                            {% if reservation.table_number %}
+                            Table {{ reservation.table_number }}
+                            {% else %}
+                            Not assigned
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium {% if reservation.payment_status == 'PAID' %}bg-green-900 text-green-300{% elif reservation.payment_status == 'PARTIALLY_PAID' %}bg-yellow-900 text-yellow-300{% else %}bg-red-900 text-red-300{% endif %}">
+                                {{ reservation.get_payment_status_display }}
+                            </span>
+                        </td>
+                        <td class="py-3 text-gray-400">
+                            {% if reservation.processed_by %}
+                            {{ reservation.processed_by.get_full_name }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            <span class="text-indigo-500">
+                                <i class="fas fa-check-double mr-1"></i> Completed
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-gray-800 rounded-lg p-6 text-center">
+            <p class="text-gray-400">No completed reservations for today.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Completed Orders -->
+    <div class="card p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Recent Completed Orders</h2>
+            <a href="{% url 'cashier_orders_list' %}" class="text-food-gold hover:text-food-gold-light text-sm">
+                View All <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+
+        {% if completed_orders %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 border-b border-gray-800">
+                        <th class="pb-3">Order #</th>
+                        <th class="pb-3">Customer</th>
+                        <th class="pb-3">Type</th>
+                        <th class="pb-3">Time</th>
+                        <th class="pb-3">Amount</th>
+                        <th class="pb-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in completed_orders|slice:":5" %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3">{{ order.id }}</td>
+                        <td class="py-3">{{ order.customer_name }}</td>
+                        <td class="py-3">
+                            {% if order.order_type == 'DINE_IN' %}
+                            <span class="bg-blue-900 text-blue-300 text-xs px-2 py-1 rounded-full">Dine In</span>
+                            {% elif order.order_type == 'TAKEOUT' or order.order_type == 'PICKUP' %}
+                            <span class="bg-green-900 text-green-300 text-xs px-2 py-1 rounded-full">Takeout</span>
+                            {% elif order.order_type == 'DELIVERY' %}
+                            <span class="bg-purple-900 text-purple-300 text-xs px-2 py-1 rounded-full">Delivery</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">{{ order.created_at|date:"H:i" }}</td>
+                        <td class="py-3">₱{{ order.total_amount }}</td>
+                        <td class="py-3">
+                            <div class="flex space-x-2">
+                                <a href="{% url 'view_order' order.id %}" class="text-food-gold hover:text-food-gold-light" title="View Order">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'print_receipt' order.id %}" class="text-blue-400 hover:text-blue-300" title="Print Receipt">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-gray-800 rounded-lg p-6 text-center">
+            <p class="text-gray-400">No completed orders for today.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+    function logoutUser() {
+        console.log('Logout function called from dashboard');
+        // Create a form to submit a POST request to the logout URL
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "logout" %}';
+
+        // Add CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = '{{ csrf_token }}';
+        form.appendChild(csrfToken);
+
+        // Append form to body, submit it, and remove it
+        document.body.appendChild(form);
+        console.log('Submitting logout form from dashboard');
+        form.submit();
+        document.body.removeChild(form);
+    }
+
+    // Function to update order status
+    function updateOrderStatus(orderId, status) {
+        let confirmMessage = 'Are you sure you want to ';
+
+        if (status === 'PREPARING') {
+            confirmMessage += 'start preparing this order?';
+        } else if (status === 'READY') {
+            confirmMessage += 'mark this order as ready for pickup/service?';
+        } else if (status === 'COMPLETED') {
+            confirmMessage += 'mark this order as completed?';
+        } else if (status === 'CANCELLED') {
+            confirmMessage += 'cancel this order?';
+        } else {
+            confirmMessage += 'update the status of this order?';
+        }
+
+        if (confirm(confirmMessage)) {
+            fetch(`/cashier/order/${orderId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `status=${status}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the order status.');
+            });
+        }
+    }
+</script>
+{% endblock extra_scripts %}

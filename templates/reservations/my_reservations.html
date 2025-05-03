@@ -1,0 +1,663 @@
+{% extends 'accounts/customer_base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}My Reservations - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+        <div>
+            <h1 class="text-2xl font-bold">My Reservations</h1>
+            <p class="text-gray-400">Manage your table reservations</p>
+        </div>
+        <a href="#" id="open-reservation-modal" class="btn-primary px-4 py-2 rounded-lg">
+            <i class="fas fa-plus mr-2"></i> New Reservation
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap gap-2">
+        <!-- Date filters -->
+        <a href="{% url 'my_reservations' %}?date=all{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}"
+           class="px-4 py-2 rounded-lg {% if date_filter == 'all' %}bg-food-gold text-food-black{% else %}bg-gray-800 text-gray-300 hover:bg-gray-700{% endif %}">
+            All Dates
+        </a>
+        <a href="{% url 'my_reservations' %}?date=today{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}"
+           class="px-4 py-2 rounded-lg {% if date_filter == 'today' %}bg-food-gold text-food-black{% else %}bg-gray-800 text-gray-300 hover:bg-gray-700{% endif %}">
+            Today
+        </a>
+        <a href="{% url 'my_reservations' %}?date=upcoming{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}"
+           class="px-4 py-2 rounded-lg {% if date_filter == 'upcoming' %}bg-food-gold text-food-black{% else %}bg-gray-800 text-gray-300 hover:bg-gray-700{% endif %}">
+            Upcoming
+        </a>
+        <a href="{% url 'my_reservations' %}?date=past{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}"
+           class="px-4 py-2 rounded-lg {% if date_filter == 'past' %}bg-food-gold text-food-black{% else %}bg-gray-800 text-gray-300 hover:bg-gray-700{% endif %}">
+            Past
+        </a>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+        <!-- Status filters -->
+        <a href="{% url 'my_reservations' %}?status=all{% if date_filter != 'all' %}&date={{ date_filter }}{% endif %}"
+           class="px-4 py-2 rounded-lg {% if status_filter == 'all' %}bg-food-gold text-food-black{% else %}bg-gray-800 text-gray-300 hover:bg-gray-700{% endif %}">
+            All Status
+        </a>
+        {% for status_code, status_name in status_choices %}
+        <a href="{% url 'my_reservations' %}?status={{ status_code }}{% if date_filter != 'all' %}&date={{ date_filter }}{% endif %}"
+           class="px-4 py-2 rounded-lg {% if status_filter == status_code %}bg-food-gold text-food-black{% else %}bg-gray-800 text-gray-300 hover:bg-gray-700{% endif %}">
+            {{ status_name }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Reservations List -->
+    <div class="card p-6 shadow-lg border border-gray-800">
+        {% if reservations %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 border-b border-gray-800">
+                        <th class="py-3 px-4 text-left">Date & Time</th>
+                        <th class="py-3 px-4 text-left">Table</th>
+                        <th class="py-3 px-4 text-left">Party Size</th>
+                        <th class="py-3 px-4 text-left">Status</th>
+                        <th class="py-3 px-4 text-left">Payment</th>
+                        <th class="py-3 px-4 text-left">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reservation in reservations %}
+                    <tr class="border-b border-gray-800" data-reservation-id="{{ reservation.id }}">
+                        <td class="py-4 font-semibold">{{ reservation.date|date:"M d, Y" }} at {{ reservation.time|time:"H:i" }}</td>
+                        <td class="py-4">
+                            {% if reservation.table_number %}
+                            Table {{ reservation.table_number }}
+                            {% else %}
+                            Not assigned
+                            {% endif %}
+                        </td>
+                        <td class="py-4">{{ reservation.party_size }} people</td>
+                        <td class="py-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold {% if reservation.status == 'COMPLETED' %}bg-blue-900 text-blue-300{% elif reservation.status == 'CONFIRMED' %}bg-green-900 text-green-300{% elif reservation.status == 'PENDING' %}bg-yellow-900 text-yellow-300{% else %}bg-red-900 text-red-300{% endif %}">
+                                {{ reservation.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="py-4">
+                            {% if not reservation.has_menu_items %}
+                                <span class="bg-gray-600 text-white px-2 py-1 rounded">Free</span>
+                            {% elif reservation.payment_status == 'PAID' %}
+                                <span class="bg-green-600 text-white px-2 py-1 rounded">Fully Paid</span>
+                            {% elif reservation.payment_status == 'PARTIALLY_PAID' %}
+                                <span class="bg-yellow-500 text-black px-2 py-1 rounded">Partially Paid</span>
+                            {% else %}
+                                <span class="bg-red-600 text-white px-2 py-1 rounded">Unpaid</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-4">
+                            {% if reservation.status == 'PENDING' %}
+                                <div class="flex flex-col space-y-2">
+                                    <div class="flex space-x-2">
+                                        <a href="{% url 'edit_reservation' reservation.id %}" class="btn-secondary btn-xs">Edit</a>
+                                        <a href="{% url 'cancel_reservation' reservation.id %}" class="btn-danger btn-xs">Cancel</a>
+                                    </div>
+                                </div>
+                            {% elif reservation.status == 'CONFIRMED' and reservation.payment_status != 'PAID' %}
+                                {% if reservation.has_menu_items %}
+                                    <!-- Check if there are any pending payments using our custom filter -->
+                                    {% if reservation|has_pending_payment %}
+                                        <!-- Show pending payment indicator -->
+                                        <div class="flex flex-col space-y-2">
+                                            <span class="bg-yellow-600 text-white px-2 py-1 rounded text-xs">
+                                                <i class="fas fa-clock mr-1"></i> Payment Pending Verification
+                                            </span>
+                                        </div>
+                                    {% else %}
+                                        <!-- Show Pay Now button -->
+                                        <div class="flex flex-col space-y-2">
+                                            <a href="{% url 'reservation_payment' reservation.id %}" class="btn-primary btn-xs">Pay Now</a>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Payment status is handled by the custom filter -->
+                                {% else %}
+                                    <span class="text-gray-400 text-xs">No payment required</span>
+                                {% endif %}
+                            {% elif reservation.status == 'CONFIRMED' and reservation.payment_status == 'PAID' and reservation.has_menu_items %}
+                                <div class="flex flex-col space-y-2">
+                                    <span class="text-green-300 text-xs">Awaiting preparation</span>
+                                    <a href="{% url 'track_preparation' 'reservation' reservation.id %}" class="bg-food-gold hover:bg-food-gold-light text-gray-900 px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-center pulse-animation">
+                                        <i class="fas fa-tasks mr-1"></i> Track Preparation
+                                    </a>
+                                </div>
+                            {% elif reservation.status == 'PENDING' and not reservation.has_menu_items %}
+                                <div class="flex flex-col space-y-2">
+                                    <span class="text-yellow-300 text-xs">Awaiting manager approval</span>
+                                </div>
+                            {% elif reservation.status == 'CONFIRMED' and not reservation.has_menu_items %}
+                                <div class="flex flex-col space-y-2">
+                                    <span class="text-green-300 text-xs">Ready for dining</span>
+                                    <a href="{% url 'menu' %}" class="bg-food-gold hover:bg-food-gold-light text-gray-900 px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-center pulse-animation">
+                                        <i class="fas fa-utensils mr-1"></i> Order Now
+                                    </a>
+                                </div>
+                            {% elif reservation.status == 'COMPLETED' %}
+                                <span class="text-blue-300 text-xs">Completed</span>
+                            {% elif reservation.status == 'CANCELLED' %}
+                                <span class="text-red-300 text-xs">Cancelled</span>
+                            {% endif %}
+
+                            {% if reservation.payment_status == 'PARTIALLY_PAID' and reservation.order %}
+                                <a href="{% url 'settle_remaining_balance' reservation.order.id %}" class="btn btn-warning btn-sm">Settle Payment</a>
+                            {% endif %}
+                            {% if reservation.payment_status == 'PAID' and reservation.order %}
+                                <a href="{% url 'print_receipt' reservation.order.id %}" class="btn btn-success btn-sm" target="_blank">Print Receipt</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-gray-500">
+            <div class="text-5xl mb-4"><i class="far fa-calendar-check"></i></div>
+            <h3 class="text-xl font-medium text-gray-400 mb-2">No Reservations Found</h3>
+            <p>It looks like you have no reservations. Click \"New Reservation\" to get started.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Timeline/Status Tracker -->
+    <div class="flex items-center justify-center mb-6">
+        <div class="flex items-center space-x-4">
+            <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center {% if reservation.status != 'PENDING' %}bg-green-500{% else %}bg-yellow-500{% endif %} text-white font-bold">1</div>
+                <span class="text-xs text-gray-300 mt-1">Requested</span>
+            </div>
+            <div class="w-8 border-t-2 {% if reservation.status != 'PENDING' %}border-green-500{% else %}border-yellow-500{% endif %}"></div>
+            <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center {% if reservation.status == 'CONFIRMED' or reservation.status == 'COMPLETED' %}bg-green-500{% else %}bg-gray-500{% endif %} text-white font-bold">2</div>
+                <span class="text-xs text-gray-300 mt-1">Confirmed</span>
+            </div>
+            <div class="w-8 border-t-2 {% if reservation.payment_status == 'PAID' %}border-green-500{% else %}border-gray-500{% endif %}"></div>
+            <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center {% if reservation.payment_status == 'PAID' %}bg-green-500{% else %}bg-gray-500{% endif %} text-white font-bold">3</div>
+                <span class="text-xs text-gray-300 mt-1">Paid</span>
+            </div>
+            <div class="w-8 border-t-2 {% if reservation.status == 'COMPLETED' %}border-green-500{% else %}border-gray-500{% endif %}"></div>
+            <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center {% if reservation.status == 'COMPLETED' %}bg-green-500{% else %}bg-gray-500{% endif %} text-white font-bold">4</div>
+                <span class="text-xs text-gray-300 mt-1">Completed</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Reservation Details Modal -->
+<div id="reservation-details-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="bg-gray-800 rounded-lg shadow-lg max-w-2xl w-full mx-4 border border-gray-700">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">Reservation Details</h3>
+                <button id="close-details-modal" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div id="reservation-details-content" class="text-gray-300">
+                <!-- Content will be loaded dynamically -->
+                <div class="flex justify-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-food-gold"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reservation Modal -->
+<div id="reservation-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="bg-gray-800 rounded-lg shadow-lg max-w-4xl w-full mx-4 border border-gray-700 overflow-y-auto max-h-[90vh]">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white">Make a Reservation</h3>
+                <button id="close-reservation-modal" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div id="reservation-form-container">
+                {% include 'reservations/reservation_form_modal.html' %}
+            </div>
+
+            <div id="reservation-success" class="hidden text-center py-8">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-900/50 flex items-center justify-center text-green-500 text-2xl">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Reservation Submitted!</h3>
+                <p class="text-gray-400 mb-6">Your reservation has been submitted successfully. We will confirm it shortly.</p>
+                <div class="flex justify-center space-x-4">
+                    <button id="view-reservations" class="bg-food-gold hover:bg-food-gold-light text-black font-bold py-2 px-4 rounded-lg transition duration-300">
+                        View Reservations
+                    </button>
+                    <button id="make-another-reservation" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                        Make Another Reservation
+                    </button>
+                </div>
+            </div>
+
+            <div id="reservation-error" class="hidden text-center py-8">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-900/50 flex items-center justify-center text-red-500 text-2xl">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Oops! Something went wrong</h3>
+                <p id="error-message" class="text-gray-400 mb-6">There was an error submitting your reservation. Please try again.</p>
+                <button id="try-again" class="bg-food-gold hover:bg-food-gold-light text-black font-bold py-2 px-4 rounded-lg transition duration-300">
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+<style>
+    @keyframes pulse-border {
+        0% {
+            box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(234, 179, 8, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(234, 179, 8, 0);
+        }
+    }
+
+    .pulse-animation {
+        animation: pulse-border 2s infinite;
+    }
+</style>
+<script>
+    // Note: We're using a simpler approach for form submission
+    // Alpine.js component initialization
+    function reservationFormData() {
+        return {
+            selectedTable: ''
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Reservation Modal
+        const reservationModal = document.getElementById('reservation-modal');
+        const openReservationModalBtn = document.getElementById('open-reservation-modal');
+        const closeReservationModalBtn = document.getElementById('close-reservation-modal');
+        const reservationForm = document.getElementById('reservation-form');
+        const reservationFormContainer = document.getElementById('reservation-form-container');
+        const reservationSuccess = document.getElementById('reservation-success');
+        const reservationError = document.getElementById('reservation-error');
+        const makeAnotherReservationBtn = document.getElementById('make-another-reservation');
+        const viewReservationsBtn = document.getElementById('view-reservations');
+        const tryAgainBtn = document.getElementById('try-again');
+        const errorMessage = document.getElementById('error-message');
+
+        // Reservation Details Modal
+        const reservationDetailsModal = document.getElementById('reservation-details-modal');
+        const closeDetailsModalBtn = document.getElementById('close-details-modal');
+        const reservationDetailsContent = document.getElementById('reservation-details-content');
+        const viewReservationBtns = document.querySelectorAll('.view-reservation-btn');
+
+        // Set minimum date to today
+        const dateInput = document.getElementById('id_date');
+        if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.min = today;
+            dateInput.value = today;
+        }
+
+        // Set a default time that's at least 30 minutes in the future
+        const timeInput = document.getElementById('id_time');
+        if (timeInput) {
+            const now = new Date();
+            const minTime = new Date(now.getTime() + 30 * 60000); // current time + 30 minutes
+
+            // Round up to nearest half hour
+            const minutes = minTime.getMinutes();
+            if (minutes % 30 !== 0) {
+                minTime.setMinutes(Math.ceil(minutes / 30) * 30);
+            }
+
+            // Format as HH:MM
+            const hours = minTime.getHours().toString().padStart(2, '0');
+            const mins = minTime.getMinutes().toString().padStart(2, '0');
+            timeInput.value = `${hours}:${mins}`;
+        }
+
+        // Open reservation modal
+        openReservationModalBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            reservationModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        });
+
+        // Close reservation modal
+        closeReservationModalBtn.addEventListener('click', function() {
+            reservationModal.classList.add('hidden');
+            document.body.style.overflow = ''; // Enable scrolling
+        });
+
+        // Close modal when clicking outside
+        reservationModal.addEventListener('click', function(e) {
+            if (e.target === reservationModal) {
+                reservationModal.classList.add('hidden');
+                document.body.style.overflow = ''; // Enable scrolling
+            }
+        });
+
+        // View reservations (refresh page)
+        if (viewReservationsBtn) {
+            viewReservationsBtn.addEventListener('click', function() {
+                window.location.reload();
+            });
+        }
+
+        // Make another reservation
+        if (makeAnotherReservationBtn) {
+            makeAnotherReservationBtn.addEventListener('click', function() {
+                reservationSuccess.classList.add('hidden');
+                reservationFormContainer.classList.remove('hidden');
+                if (reservationForm) {
+                    reservationForm.reset();
+                    if (dateInput) {
+                        dateInput.value = today;
+                    }
+                }
+            });
+        }
+
+        // Try again after error
+        if (tryAgainBtn) {
+            tryAgainBtn.addEventListener('click', function() {
+                reservationError.classList.add('hidden');
+                reservationFormContainer.classList.remove('hidden');
+
+                // Update the time field to ensure it's valid
+                const timeInput = document.getElementById('id_time');
+                if (timeInput) {
+                    const now = new Date();
+                    const minTime = new Date(now.getTime() + 30 * 60000); // current time + 30 minutes
+
+                    // Round up to nearest half hour
+                    const minutes = minTime.getMinutes();
+                    if (minutes % 30 !== 0) {
+                        minTime.setMinutes(Math.ceil(minutes / 30) * 30);
+                    }
+
+                    // Format as HH:MM
+                    const hours = minTime.getHours().toString().padStart(2, '0');
+                    const mins = minTime.getMinutes().toString().padStart(2, '0');
+                    timeInput.value = `${hours}:${mins}`;
+                }
+            });
+        }
+
+        // Handle form submission
+        if (reservationForm) {
+            reservationForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Validate the form
+                const tableInput = document.getElementById('table_number');
+                if (!tableInput || !tableInput.value) {
+                    alert('Please select a table for your reservation.');
+                    return;
+                }
+
+                // Set a default time that's at least 30 minutes in the future
+                const timeInput = document.getElementById('id_time');
+                if (timeInput) {
+                    // Check if date is today and time is at least 30 minutes in the future
+                    const dateInput = document.getElementById('id_date');
+                    const today = new Date().toISOString().split('T')[0];
+                    if (dateInput && dateInput.value === today) {
+                        const now = new Date();
+                        const selectedTime = new Date(today + 'T' + timeInput.value);
+                        const minTime = new Date(now.getTime() + 30 * 60000); // current time + 30 minutes
+
+                        if (selectedTime < minTime) {
+                            // Update the time to be valid
+                            const validTime = new Date(minTime.getTime());
+                            // Round up to nearest half hour
+                            const minutes = validTime.getMinutes();
+                            if (minutes % 30 !== 0) {
+                                validTime.setMinutes(Math.ceil(minutes / 30) * 30);
+                            }
+
+                            // Format as HH:MM
+                            const hours = validTime.getHours().toString().padStart(2, '0');
+                            const mins = validTime.getMinutes().toString().padStart(2, '0');
+                            timeInput.value = `${hours}:${mins}`;
+
+                            alert(`The time has been adjusted to ${hours}:${mins} to ensure it's at least 30 minutes in the future.`);
+                        }
+                    }
+                }
+
+                // Show loading state
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
+
+                // Get form data
+                const formData = new FormData(this);
+
+                // Add AJAX header
+                const headers = new Headers();
+                headers.append('X-Requested-With', 'XMLHttpRequest');
+
+                // Submit the form via AJAX
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: headers
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+
+                    if (data.success) {
+                        // Always redirect to payment page
+                        if (data.redirect_url) {
+                            console.log('Redirecting to:', data.redirect_url);
+                            window.location.href = data.redirect_url;
+                        } else if (data.reservation_id) {
+                            // Construct the URL if redirect_url is not provided but reservation_id is
+                            const paymentUrl = `/reservations/${data.reservation_id}/payment/`;
+                            console.log('Redirecting to constructed URL:', paymentUrl);
+                            window.location.href = paymentUrl;
+                        } else {
+                            // Fallback to success message if no redirect information is available
+                            console.log('No redirect information available, showing success message');
+                            reservationFormContainer.classList.add('hidden');
+                            reservationSuccess.classList.remove('hidden');
+                        }
+                    } else {
+                        // Show error message
+                        const errorText = document.getElementById('error-message');
+                        if (errorText) {
+                            if (data.errors) {
+                                let errorMsg = '';
+                                for (const field in data.errors) {
+                                    errorMsg += data.errors[field].join(' ') + ' ';
+                                }
+                                errorText.textContent = errorMsg || 'Please correct the errors below.';
+                            } else {
+                                errorText.textContent = data.message || 'There was an error submitting your reservation.';
+                            }
+                        }
+                        reservationFormContainer.classList.add('hidden');
+                        reservationError.classList.remove('hidden');
+                    }
+                })
+                .catch(error => {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+
+                    // Show error message
+                    const errorText = document.getElementById('error-message');
+                    if (errorText) {
+                        errorText.textContent = 'There was an error submitting your reservation. Please try again.';
+                    }
+                    reservationFormContainer.classList.add('hidden');
+                    reservationError.classList.remove('hidden');
+                    console.error('Error:', error);
+                });
+            });
+        }
+
+        // Reservation details modal functions
+        function openReservationDetailsModal(reservationId) {
+            reservationDetailsModal.classList.remove('hidden');
+            reservationDetailsContent.innerHTML = `
+                <div class="flex justify-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-food-gold"></div>
+                </div>
+            `;
+
+            // In a real implementation, you would fetch the reservation details from the server
+            // For now, we'll simulate loading with a timeout
+            setTimeout(() => {
+                // Find the reservation in the table
+                const row = document.querySelector(`tr[data-reservation-id="${reservationId}"]`) ||
+                           document.querySelector(`[data-reservation-id="${reservationId}"]`).closest('tr');
+                const dateTime = row.cells[0].textContent;
+                const table = row.cells[1].textContent;
+                const partySize = row.cells[2].textContent;
+                const status = row.cells[3].querySelector('span').textContent;
+                const statusClass = row.cells[3].querySelector('span').className;
+                const payment = row.cells[4].querySelector('span').textContent;
+                const paymentClass = row.cells[4].querySelector('span').className;
+
+                // Check if there's a pending payment indicator in the actions cell
+                const pendingPaymentIndicator = row.cells[5].querySelector('.bg-yellow-600');
+                const hasPendingPayment = pendingPaymentIndicator !== null;
+
+                // Get reservation items if any
+                let reservationItemsHtml = '';
+                {% for res_id, items in reservation_items.items %}
+                if (reservationId == {{ res_id }}) {
+                    reservationItemsHtml = `
+                        <div class="mb-4">
+                            <h4 class="text-white font-bold mb-2">Pre-ordered Menu Items</h4>
+                            <div class="space-y-2">
+                                {% for item in items %}
+                                <div class="flex justify-between items-center p-3 bg-gray-700 rounded-lg">
+                                    <div>
+                                        <p class="text-white font-medium">{{ item.menu_item.name }}</p>
+                                        <p class="text-gray-400 text-sm">₱{{ item.price }} × {{ item.quantity }}</p>
+                                        {% if item.special_instructions %}
+                                        <p class="text-gray-400 text-xs mt-1">Note: {{ item.special_instructions }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-food-gold font-bold">
+                                        ₱{{ item.subtotal }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    `;
+                }
+                {% endfor %}
+
+                reservationDetailsContent.innerHTML = `
+                    <div class="mb-4 pb-4 border-b border-gray-800">
+                        <div class="flex justify-between">
+                            <div>
+                                <h4 class="text-white font-bold">Reservation #${reservationId}</h4>
+                                <p class="text-gray-400 text-sm">Created on {{ reservation.created_at|date:"M d, Y" }}</p>
+                            </div>
+                            <span class="${statusClass}">${status}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <h4 class="text-white font-bold mb-2">Reservation Details</h4>
+                            <p class="text-gray-400">Date & Time: ${dateTime}</p>
+                            <p class="text-gray-400">Table: ${table}</p>
+                            <p class="text-gray-400">Party Size: ${partySize}</p>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-bold mb-2">Contact Information</h4>
+                            <p class="text-gray-400">Name: {{ request.user.get_full_name }}</p>
+                            <p class="text-gray-400">Email: {{ request.user.email }}</p>
+                            <p class="text-gray-400">Phone: {{ request.user.customer_profile.phone }}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <h4 class="text-white font-bold mb-2">Payment Status</h4>
+                            <p class="text-gray-400">Status: <span class="${paymentClass}">${payment}</span></p>
+                            ${hasPendingPayment ?
+                              `<p class="text-yellow-500 mt-2">
+                                <i class="fas fa-clock mr-1"></i> Payment submitted and awaiting verification
+                              </p>` : ''}
+                        </div>
+                    </div>
+
+                    ${reservationItemsHtml}
+
+                    <div class="mb-4">
+                        <h4 class="text-white font-bold mb-2">Special Requests</h4>
+                        <p class="text-gray-400">{{ reservation.special_requests|default:"No special requests" }}</p>
+                    </div>
+
+                    {% if reservation.status == 'PENDING' %}
+                    <div class="flex justify-end mt-6">
+                        <a href="{% url 'cancel_reservation' reservation.id %}"
+                           class="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                           onclick="return confirm('Are you sure you want to cancel this reservation?');">
+                            <i class="fas fa-times mr-2"></i> Cancel Reservation
+                        </a>
+                    </div>
+                    {% endif %}
+                `;
+            }, 500);
+        }
+
+        function closeReservationDetailsModal() {
+            reservationDetailsModal.classList.add('hidden');
+        }
+
+        viewReservationBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const reservationId = this.dataset.reservationId;
+                openReservationDetailsModal(reservationId);
+            });
+        });
+
+        if (closeDetailsModalBtn) {
+            closeDetailsModalBtn.addEventListener('click', closeReservationDetailsModal);
+        }
+
+        // Close modal when clicking outside
+        if (reservationDetailsModal) {
+            reservationDetailsModal.addEventListener('click', function(e) {
+                if (e.target === reservationDetailsModal) {
+                    closeReservationDetailsModal();
+                }
+            });
+        }
+    });
+</script>
+{% endblock extra_scripts %}
+{% endblock content %}

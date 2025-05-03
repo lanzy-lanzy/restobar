@@ -1,0 +1,911 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Make a Reservation - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-white mb-2">Make a Reservation</h1>
+            <p class="text-gray-400">Welcome, {{ user.get_full_name|default:user.username }}! Reserve your table at 5th Avenue Grill and Restobar</p>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg shadow-lg p-8 border border-gray-700">
+            <form method="post" class="space-y-6" x-data="reservationFormData()">
+                {% csrf_token %}
+                <input type="hidden" name="table_number" id="table_number" x-model="selectedTable">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.name.id_for_label }}" class="block text-white font-medium mb-2">Name</label>
+                        <div class="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 text-white">
+                            {{ form.name.value }}
+                        </div>
+                        {{ form.name.as_hidden }}
+                        {% if form.name.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="block text-white font-medium mb-2">Email</label>
+                        <div class="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 text-white">
+                            {{ form.email.value }}
+                        </div>
+                        {{ form.email.as_hidden }}
+                        {% if form.email.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="{{ form.phone.id_for_label }}" class="block text-white font-medium mb-2">Phone Number</label>
+                    <div class="w-full bg-gray-700 border border-gray-600 rounded-lg py-3 px-4 text-white">
+                        {% if form.phone.value %}
+                            {{ form.phone.value }}
+                        {% else %}
+                            <span class="text-gray-500">Please update your phone number in your profile</span>
+                        {% endif %}
+                    </div>
+                    {{ form.phone.as_hidden }}
+                    {% if form.phone.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ form.phone.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div x-data="datePicker()">
+                        <label for="{{ form.date.id_for_label }}" class="block text-white font-medium mb-2">Date</label>
+                        <div class="relative">
+                            <input type="text" id="date_display"
+                                   class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-food-gold"
+                                   x-model="formattedDate"
+                                   @click="showDatepicker = !showDatepicker"
+                                   readonly>
+                            <div class="hidden">{{ form.date }}</div>
+                            <div class="absolute right-0 top-0 px-3 py-2 text-gray-400">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+
+                            <!-- Calendar Dropdown -->
+                            <div x-show="showDatepicker"
+                                 @click.away="showDatepicker = false"
+                                 class="absolute z-10 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-4 w-64">
+                                <div class="flex justify-between items-center mb-2">
+                                    <button type="button" @click="prevMonth" class="text-gray-400 hover:text-white">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <div class="text-white font-medium" x-text="monthYearText"></div>
+                                    <button type="button" @click="nextMonth" class="text-gray-400 hover:text-white">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Days of week -->
+                                <div class="grid grid-cols-7 gap-1 mb-2">
+                                    <template x-for="day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']">
+                                        <div class="text-center text-gray-500 text-xs py-1" x-text="day"></div>
+                                    </template>
+                                </div>
+
+                                <!-- Calendar days -->
+                                <div class="grid grid-cols-7 gap-1">
+                                    <template x-for="blankday in blankdays">
+                                        <div class="text-center text-gray-600 text-sm py-1"></div>
+                                    </template>
+                                    <template x-for="(date, dateIndex) in days" :key="dateIndex">
+                                        <div class="text-center text-sm">
+                                            <button type="button"
+                                                    @click="selectDate(date)"
+                                                    x-text="date"
+                                                    class="w-8 h-8 rounded-full focus:outline-none transition-colors duration-200"
+                                                    :class="{
+                                                        'bg-food-gold text-black font-bold': isSelectedDate(date),
+                                                        'text-gray-400 hover:bg-gray-700': !isSelectedDate(date) && !isToday(date) && isDateSelectable(date),
+                                                        'text-white bg-gray-700': isToday(date) && !isSelectedDate(date),
+                                                        'text-gray-600 cursor-not-allowed': !isDateSelectable(date)
+                                                    }"
+                                                    :disabled="!isDateSelectable(date)">
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        {% if form.date.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.date.errors.0 }}</p>
+                        {% endif %}
+                        {% if form.date.help_text %}
+                        <p class="text-gray-500 text-xs mt-1">{{ form.date.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.time.id_for_label }}" class="block text-white font-medium mb-2">Time</label>
+                        {{ form.time }}
+                        {% if form.time.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.time.errors.0 }}</p>
+                        {% endif %}
+                        {% if form.time.help_text %}
+                        <p class="text-gray-500 text-xs mt-1">{{ form.time.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="{{ form.party_size.id_for_label }}" class="block text-white font-medium mb-2">Number of Guests</label>
+                    {{ form.party_size }}
+                    {% if form.party_size.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ form.party_size.errors.0 }}</p>
+                    {% endif %}
+                    {% if form.party_size.help_text %}
+                    <p class="text-gray-500 text-xs mt-1">{{ form.party_size.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.special_requests.id_for_label }}" class="block text-white font-medium mb-2">Special Requests</label>
+                    {{ form.special_requests }}
+                    {% if form.special_requests.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ form.special_requests.errors.0 }}</p>
+                    {% endif %}
+                    {% if form.special_requests.help_text %}
+                    <p class="text-gray-500 text-xs mt-1">{{ form.special_requests.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Table Selection Section -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold text-white mb-4">Select a Table</h3>
+                    <p class="text-gray-400 mb-4">Choose a table for your reservation</p>
+
+                    <div class="bg-gray-900 p-4 rounded-lg">
+                        <!-- Tables Layout -->
+                        <div class="mb-4">
+                            <!-- Tables Row 1 -->
+                            <div class="grid grid-cols-3 gap-4 mb-6">
+                                {% for i in '123'|make_list %}
+                                <button type="button"
+                                        @click="selectedTable = '{{ i }}'"
+                                        data-table="{{ i }}"
+                                        data-capacity="4"
+                                        class="table-button relative py-4 px-2 rounded-lg text-center transition-all duration-300 border-2"
+                                        :class="{
+                                            'bg-food-gold text-white border-yellow-500 transform scale-110 shadow-xl ring-4 ring-yellow-500 ring-opacity-50 font-bold pulse-animation': selectedTable === '{{ i }}',
+                                            'bg-red-800 text-red-300 cursor-not-allowed border-transparent': '{{ i }}' in '{{ occupied_tables }}',
+                                            'bg-gray-700 text-gray-300 hover:bg-gray-600 border-transparent hover:border-food-gold': selectedTable !== '{{ i }}' && !('{{ i }}' in '{{ occupied_tables }}')
+                                        }"
+                                        {% if i in occupied_tables %}disabled{% endif %}>
+                                    <div class="text-center font-medium">Table {{ i }}</div>
+                                    <div class="text-xs">4 Persons</div>
+                                    <div x-show="selectedTable === '{{ i }}'" class="absolute inset-0 flex items-center justify-center">
+                                        <div class="bg-white bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center">
+                                            <i class="fas fa-check text-white"></i>
+                                        </div>
+                                    </div>
+                                    {% if i in occupied_tables %}
+                                    <div class="absolute top-1 right-1">
+                                        <span class="bg-red-900 text-red-300 text-xs px-1.5 py-0.5 rounded">Occupied</span>
+                                    </div>
+                                    {% endif %}
+                                </button>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Tables Row 2 -->
+                            <div class="grid grid-cols-3 gap-4">
+                                {% for i in '456'|make_list %}
+                                <button type="button"
+                                        @click="selectedTable = '{{ i }}'"
+                                        data-table="{{ i }}"
+                                        data-capacity="4"
+                                        class="table-button relative py-4 px-2 rounded-lg text-center transition-all duration-300 border-2"
+                                        :class="{
+                                            'bg-food-gold text-white border-yellow-500 transform scale-110 shadow-xl ring-4 ring-yellow-500 ring-opacity-50 font-bold pulse-animation': selectedTable === '{{ i }}',
+                                            'bg-red-800 text-red-300 cursor-not-allowed border-transparent': '{{ i }}' in '{{ occupied_tables }}',
+                                            'bg-gray-700 text-gray-300 hover:bg-gray-600 border-transparent hover:border-food-gold': selectedTable !== '{{ i }}' && !('{{ i }}' in '{{ occupied_tables }}')
+                                        }"
+                                        {% if i in occupied_tables %}disabled{% endif %}>
+                                    <div class="text-center font-medium">Table {{ i }}</div>
+                                    <div class="text-xs">4 Persons</div>
+                                    <div x-show="selectedTable === '{{ i }}'" class="absolute inset-0 flex items-center justify-center">
+                                        <div class="bg-white bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center">
+                                            <i class="fas fa-check text-white"></i>
+                                        </div>
+                                    </div>
+                                    {% if i in occupied_tables %}
+                                    <div class="absolute top-1 right-1">
+                                        <span class="bg-red-900 text-red-300 text-xs px-1.5 py-0.5 rounded">Occupied</span>
+                                    </div>
+                                    {% endif %}
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Selected Table Info -->
+                        <div x-show="selectedTable" class="mt-4 p-4 bg-gray-800 rounded-lg border-2 border-food-gold shadow-lg transform transition-all duration-300" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
+                            <div class="flex items-center">
+                                <div class="bg-food-gold text-black rounded-full w-8 h-8 flex items-center justify-center mr-3">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <p class="text-white text-lg">Selected: <span class="font-bold text-food-gold">Table <span x-text="selectedTable"></span></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Food Preparation Options -->
+                <div class="mt-6 p-6 bg-gray-900 rounded-lg border border-gray-700">
+                    <h3 class="text-xl font-bold text-white mb-4">Food Options</h3>
+
+                    <!-- Pre-order Menu Items Toggle -->
+                    <div class="mb-4" x-data="{ hasMenuItems: false }">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" name="has_menu_items" id="id_has_menu_items"
+                                   class="form-checkbox h-5 w-5 text-food-gold rounded bg-gray-700 border-gray-600 focus:ring-food-gold"
+                                   x-model="hasMenuItems">
+                            <span class="ml-2 text-white">Pre-order menu items with your reservation</span>
+                        </label>
+                        <p class="text-gray-400 text-sm mt-1 ml-7">Select menu items to have ready when you arrive</p>
+
+                        <!-- Menu Items Selection (shown when toggle is on) -->
+                        <div x-show="hasMenuItems" class="mt-4 p-6 bg-gray-800 rounded-lg border border-gray-700"
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0 transform scale-95"
+                             x-transition:enter-end="opacity-100 transform scale-100">
+
+                            <div class="mb-5 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="bg-food-gold/20 p-2 rounded-full mr-3">
+                                        <i class="fas fa-utensils text-food-gold text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-white font-bold text-lg">Pre-order Menu Items</h4>
+                                        <p class="text-gray-400 text-sm">Select items to have ready when you arrive</p>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block">
+                                    <button type="button" id="add-more-items" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                                        <i class="fas fa-sync-alt mr-2"></i> Refresh Menu
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Selected Items Summary -->
+                            <div id="selected-items-summary" class="mb-5 p-4 bg-gray-900 rounded-lg border border-gray-700 hidden">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h5 class="text-food-gold font-bold">Your Selected Items</h5>
+                                    <span id="selected-items-count" class="bg-food-gold text-gray-900 text-xs font-bold px-2 py-1 rounded-full">0 items</span>
+                                </div>
+                                <div id="selected-items-list" class="space-y-2 max-h-40 overflow-y-auto pr-2">
+                                    <!-- Selected items will be displayed here -->
+                                </div>
+                                <div class="mt-3 pt-3 border-t border-gray-700 flex justify-between items-center">
+                                    <span class="text-gray-300">Subtotal:</span>
+                                    <span id="selected-items-total" class="text-food-gold font-bold">₱0.00</span>
+                                </div>
+                            </div>
+
+                            <!-- Category Filter Tabs -->
+                            <div class="mb-4 border-b border-gray-700">
+                                <div id="category-tabs" class="flex overflow-x-auto pb-1 hide-scrollbar">
+                                    <button type="button" class="category-tab active whitespace-nowrap px-4 py-2 mr-2 text-sm font-medium rounded-t-lg transition-colors duration-200" data-category="all">
+                                        All Items
+                                    </button>
+                                    <!-- Category tabs will be added dynamically -->
+                                </div>
+                            </div>
+
+                            <div id="menu-items-container" class="space-y-6">
+                                <!-- Menu items will be loaded via AJAX -->
+                                <div class="text-center py-8">
+                                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-food-gold"></div>
+                                    <p class="text-gray-400 mt-3">Loading menu items...</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 flex justify-between items-center">
+                                <div class="md:hidden">
+                                    <button type="button" id="mobile-add-more-items" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                                        <i class="fas fa-sync-alt mr-2"></i> Refresh Menu
+                                    </button>
+                                </div>
+                                <div class="text-gray-400 text-sm italic">
+                                    <i class="fas fa-info-circle mr-1"></i> You can adjust quantities after adding items
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="menu-items-data" name="menu_items_data" value="">
+                        </div>
+                    </div>
+
+                    <!-- Prepare Food Ahead of Time -->
+                    <div class="mt-6">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" name="prepare_ahead" id="id_prepare_ahead"
+                                   class="form-checkbox h-5 w-5 text-food-gold rounded bg-gray-700 border-gray-600 focus:ring-food-gold">
+                            <span class="ml-2 text-white">Prepare food 20 minutes before reservation time</span>
+                        </label>
+                        <p class="text-gray-400 text-sm mt-1 ml-7">Your food will be ready shortly after you arrive</p>
+
+                        <div class="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
+                            <div class="flex items-start">
+                                <i class="fas fa-clock text-food-gold mt-1 mr-3"></i>
+                                <p class="text-gray-300 text-sm">When selected, our kitchen will prepare your pre-ordered items 20 minutes before your reservation time to ensure your food is fresh and ready when you arrive.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end mt-6">
+                    <button type="submit" class="bg-food-gold hover:bg-food-gold-light text-black font-bold py-3 px-6 rounded-lg transition duration-300">
+                        <i class="fas fa-check-circle mr-2"></i> Complete Reservation
+                    </button>
+                </div>
+
+                <div class="mt-4 p-4 bg-gray-900 rounded-lg border border-gray-700">
+                    <div class="flex items-center text-gray-400">
+                        <i class="fas fa-info-circle text-food-gold mr-2"></i>
+                        <p class="text-sm">After submitting your reservation, you'll need manager approval. If you've pre-ordered menu items, you'll be redirected to our payment page where you can choose to pay the full amount or a 50% deposit to secure your reservation. Table-only reservations are free and don't require payment.</p>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="mt-8 text-center">
+            <p class="text-gray-400">
+                Need help? Call us at <a href="tel:+1234567890" class="text-food-gold hover:underline">+1 (234) 567-890</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+<style>
+    @keyframes pulse-border {
+        0% {
+            box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(234, 179, 8, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(234, 179, 8, 0);
+        }
+    }
+
+    .pulse-animation {
+        animation: pulse-border 2s infinite;
+    }
+</style>
+<script>
+    // Add custom styling to form fields
+    document.addEventListener('DOMContentLoaded', function() {
+        const formInputs = document.querySelectorAll('input, textarea, select');
+        formInputs.forEach(input => {
+            if (!input.classList.contains('btn-primary')) {
+                input.classList.add('w-full', 'bg-gray-700', 'border', 'border-gray-600', 'rounded-lg', 'py-3', 'px-4', 'text-white', 'focus:outline-none', 'focus:ring-2', 'focus:ring-food-gold');
+            }
+        });
+    });
+
+    // Alpine.js component initialization
+    function reservationFormData() {
+        return {
+            selectedTable: '',
+            menuItems: [],
+            selectedItems: []
+        };
+    }
+
+    // Load menu items when the checkbox is checked
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasMenuItemsCheckbox = document.getElementById('id_has_menu_items');
+        const menuItemsContainer = document.getElementById('menu-items-container');
+        const menuItemsDataInput = document.getElementById('menu-items-data');
+        const addMoreItemsButton = document.getElementById('add-more-items');
+        const mobileAddMoreItemsButton = document.getElementById('mobile-add-more-items');
+        const selectedItemsSummary = document.getElementById('selected-items-summary');
+        const selectedItemsList = document.getElementById('selected-items-list');
+        const selectedItemsCount = document.getElementById('selected-items-count');
+        const selectedItemsTotal = document.getElementById('selected-items-total');
+        const categoryTabs = document.getElementById('category-tabs');
+
+        let selectedItems = [];
+        let allMenuItems = [];
+        let activeCategory = 'all';
+
+        // Function to load menu items via AJAX
+        function loadMenuItems() {
+            menuItemsContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-food-gold"></div>
+                    <p class="text-gray-400 mt-3">Loading menu items...</p>
+                </div>
+            `;
+
+            fetch('/api/menu-items/')
+                .then(response => response.json())
+                .then(data => {
+                    allMenuItems = data;
+                    menuItemsContainer.innerHTML = '';
+                    renderCategoryTabs(data);
+                    renderMenuItemSelector(data);
+                })
+                .catch(error => {
+                    console.error('Error loading menu items:', error);
+                    menuItemsContainer.innerHTML = `
+                        <div class="p-4 bg-red-900/30 text-red-300 rounded-lg">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            Error loading menu items. Please try again.
+                        </div>
+                    `;
+                });
+        }
+
+        // Function to render category tabs
+        function renderCategoryTabs(items) {
+            // Get unique categories
+            const categories = [...new Set(items.map(item => item.category))];
+
+            // Clear existing tabs except "All Items"
+            const allItemsTab = categoryTabs.querySelector('[data-category="all"]');
+            categoryTabs.innerHTML = '';
+            categoryTabs.appendChild(allItemsTab);
+
+            // Add category tabs
+            categories.forEach(category => {
+                const tab = document.createElement('button');
+                tab.type = 'button';
+                tab.className = 'category-tab whitespace-nowrap px-4 py-2 mr-2 text-sm font-medium rounded-t-lg transition-colors duration-200';
+                tab.dataset.category = category;
+                tab.textContent = category;
+
+                tab.addEventListener('click', () => {
+                    // Update active tab
+                    document.querySelectorAll('.category-tab').forEach(t => {
+                        t.classList.remove('active', 'bg-gray-700', 'text-white');
+                        t.classList.add('text-gray-400', 'hover:text-white', 'hover:bg-gray-700');
+                    });
+                    tab.classList.add('active', 'bg-gray-700', 'text-white');
+                    tab.classList.remove('text-gray-400', 'hover:text-white', 'hover:bg-gray-700');
+
+                    // Filter items by category
+                    activeCategory = category;
+                    filterMenuItemsByCategory();
+                });
+
+                categoryTabs.appendChild(tab);
+            });
+
+            // Set "All Items" as active by default
+            allItemsTab.classList.add('active', 'bg-gray-700', 'text-white');
+            allItemsTab.addEventListener('click', () => {
+                document.querySelectorAll('.category-tab').forEach(t => {
+                    t.classList.remove('active', 'bg-gray-700', 'text-white');
+                    t.classList.add('text-gray-400', 'hover:text-white', 'hover:bg-gray-700');
+                });
+                allItemsTab.classList.add('active', 'bg-gray-700', 'text-white');
+                allItemsTab.classList.remove('text-gray-400', 'hover:text-white', 'hover:bg-gray-700');
+
+                activeCategory = 'all';
+                filterMenuItemsByCategory();
+            });
+        }
+
+        // Function to filter menu items by category
+        function filterMenuItemsByCategory() {
+            const categoryDivs = menuItemsContainer.querySelectorAll('.menu-category');
+
+            if (activeCategory === 'all') {
+                categoryDivs.forEach(div => {
+                    div.style.display = 'block';
+                });
+            } else {
+                categoryDivs.forEach(div => {
+                    if (div.dataset.category === activeCategory) {
+                        div.style.display = 'block';
+                    } else {
+                        div.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Function to render menu item selector
+        function renderMenuItemSelector(items) {
+            if (!items || items.length === 0) {
+                menuItemsContainer.innerHTML = `
+                    <div class="p-4 bg-gray-800 text-gray-400 rounded-lg text-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        No menu items available.
+                    </div>
+                `;
+                return;
+            }
+
+            // Group items by category
+            const categories = {};
+            items.forEach(item => {
+                if (!categories[item.category]) {
+                    categories[item.category] = [];
+                }
+                categories[item.category].push(item);
+            });
+
+            // Create a menu item card
+            const createMenuItemCard = (item) => {
+                const itemId = `menu-item-${item.id}`;
+                const card = document.createElement('div');
+                card.className = 'menu-item-card bg-gray-800 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-food-gold/10 border border-gray-700 hover:border-food-gold/50';
+                card.dataset.itemId = item.id;
+
+                // Check if this item is already selected
+                const existingItem = selectedItems.find(selected => selected.id === item.id);
+                const quantity = existingItem ? existingItem.quantity : 0;
+
+                card.innerHTML = `
+                    <div class="relative">
+                        <img src="${item.image || '/static/images/placeholder-food.jpg'}" alt="${item.name}" class="w-full h-36 object-cover">
+                        ${item.is_vegetarian ? '<span class="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full"><i class="fas fa-leaf mr-1"></i> Veg</span>' : ''}
+                        ${item.spice_level > 0 ? `<span class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full"><i class="fas fa-pepper-hot mr-1"></i> ${item.spice_level}/5</span>` : ''}
+                        ${quantity > 0 ? `<div class="absolute inset-0 bg-food-gold/20 flex items-center justify-center">
+                            <div class="bg-food-gold text-gray-900 font-bold text-lg px-4 py-2 rounded-full">
+                                ${quantity} in cart
+                            </div>
+                        </div>` : ''}
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="text-white font-bold">${item.name}</h4>
+                            <span class="text-food-gold font-bold">₱${item.price.toFixed(2)}</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4 h-12 overflow-hidden">${item.description.substring(0, 80)}${item.description.length > 80 ? '...' : ''}</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center bg-gray-700 rounded-lg overflow-hidden">
+                                <button type="button" class="quantity-btn minus text-white w-8 h-8 flex items-center justify-center hover:bg-gray-600 transition-colors duration-200 ${quantity <= 0 ? 'opacity-50 cursor-not-allowed' : ''}">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input type="number" min="0" value="${quantity}" class="quantity-input w-10 h-8 bg-gray-700 border-0 text-center text-white focus:outline-none"
+                                       data-item-id="${item.id}" data-item-name="${item.name}" data-item-price="${item.price}" data-item-image="${item.image || '/static/images/placeholder-food.jpg'}">
+                                <button type="button" class="quantity-btn plus text-white w-8 h-8 flex items-center justify-center hover:bg-gray-600 transition-colors duration-200">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <button type="button" class="add-to-cart-btn ${quantity > 0 ? 'bg-green-600 hover:bg-green-700' : 'bg-food-gold hover:bg-food-gold-light'} text-white px-3 py-1 rounded-lg text-sm transition-colors duration-200">
+                                ${quantity > 0 ? '<i class="fas fa-check mr-1"></i> Added' : '<i class="fas fa-plus mr-1"></i> Add'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Add event listeners for quantity buttons
+                const quantityInput = card.querySelector('.quantity-input');
+                const minusBtn = card.querySelector('.minus');
+                const plusBtn = card.querySelector('.plus');
+                const addToCartBtn = card.querySelector('.add-to-cart-btn');
+
+                minusBtn.addEventListener('click', () => {
+                    if (parseInt(quantityInput.value) > 0) {
+                        quantityInput.value = parseInt(quantityInput.value) - 1;
+                        updateSelectedItems();
+                        updateCardAppearance(card, parseInt(quantityInput.value));
+                    }
+                });
+
+                plusBtn.addEventListener('click', () => {
+                    quantityInput.value = parseInt(quantityInput.value) + 1;
+                    updateSelectedItems();
+                    updateCardAppearance(card, parseInt(quantityInput.value));
+                });
+
+                addToCartBtn.addEventListener('click', () => {
+                    const currentQty = parseInt(quantityInput.value);
+                    if (currentQty === 0) {
+                        quantityInput.value = 1;
+                        updateSelectedItems();
+                        updateCardAppearance(card, 1);
+                    } else {
+                        // If already added, increment by 1
+                        quantityInput.value = currentQty + 1;
+                        updateSelectedItems();
+                        updateCardAppearance(card, currentQty + 1);
+                    }
+                });
+
+                quantityInput.addEventListener('change', () => {
+                    updateSelectedItems();
+                    updateCardAppearance(card, parseInt(quantityInput.value));
+                });
+
+                return card;
+            };
+
+            // Function to update card appearance based on quantity
+            function updateCardAppearance(card, quantity) {
+                const addToCartBtn = card.querySelector('.add-to-cart-btn');
+                const minusBtn = card.querySelector('.minus');
+                const imageOverlay = card.querySelector('.absolute.inset-0');
+
+                if (quantity > 0) {
+                    // Update button appearance
+                    addToCartBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Added';
+                    addToCartBtn.classList.remove('bg-food-gold', 'hover:bg-food-gold-light');
+                    addToCartBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+
+                    // Enable minus button
+                    minusBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                    // Add or update overlay
+                    if (imageOverlay) {
+                        const countElement = imageOverlay.querySelector('div');
+                        countElement.textContent = `${quantity} in cart`;
+                    } else {
+                        const imgContainer = card.querySelector('.relative');
+                        const overlay = document.createElement('div');
+                        overlay.className = 'absolute inset-0 bg-food-gold/20 flex items-center justify-center';
+                        overlay.innerHTML = `
+                            <div class="bg-food-gold text-gray-900 font-bold text-lg px-4 py-2 rounded-full">
+                                ${quantity} in cart
+                            </div>
+                        `;
+                        imgContainer.appendChild(overlay);
+                    }
+                } else {
+                    // Reset button appearance
+                    addToCartBtn.innerHTML = '<i class="fas fa-plus mr-1"></i> Add';
+                    addToCartBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    addToCartBtn.classList.add('bg-food-gold', 'hover:bg-food-gold-light');
+
+                    // Disable minus button
+                    minusBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+                    // Remove overlay if exists
+                    if (imageOverlay) {
+                        imageOverlay.remove();
+                    }
+                }
+            }
+
+            // Render items by category
+            Object.keys(categories).forEach(category => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'menu-category mb-8';
+                categoryDiv.dataset.category = category;
+                categoryDiv.innerHTML = `
+                    <div class="flex items-center mb-4">
+                        <div class="w-8 h-8 rounded-full bg-food-gold/20 flex items-center justify-center mr-3">
+                            <i class="fas fa-utensils text-food-gold"></i>
+                        </div>
+                        <h3 class="text-white font-bold text-lg">${category}</h3>
+                    </div>
+                `;
+
+                // Create grid for menu items
+                const menuItemsGrid = document.createElement('div');
+                menuItemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+
+                categories[category].forEach(item => {
+                    menuItemsGrid.appendChild(createMenuItemCard(item));
+                });
+
+                categoryDiv.appendChild(menuItemsGrid);
+                menuItemsContainer.appendChild(categoryDiv);
+            });
+        }
+
+        // Function to update selected items
+        function updateSelectedItems() {
+            selectedItems = [];
+            document.querySelectorAll('.quantity-input').forEach(input => {
+                const quantity = parseInt(input.value);
+                if (quantity > 0) {
+                    selectedItems.push({
+                        id: input.dataset.itemId,
+                        name: input.dataset.itemName,
+                        price: parseFloat(input.dataset.itemPrice),
+                        image: input.dataset.itemImage,
+                        quantity: quantity
+                    });
+                }
+            });
+
+            // Update hidden input with JSON data
+            menuItemsDataInput.value = JSON.stringify(selectedItems);
+
+            // Update selected items summary
+            updateSelectedItemsSummary();
+        }
+
+        // Function to update selected items summary
+        function updateSelectedItemsSummary() {
+            if (selectedItems.length > 0) {
+                selectedItemsSummary.classList.remove('hidden');
+                selectedItemsCount.textContent = `${selectedItems.length} item${selectedItems.length !== 1 ? 's' : ''}`;
+
+                // Calculate total
+                const total = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                selectedItemsTotal.textContent = `₱${total.toFixed(2)}`;
+
+                // Update list of selected items
+                selectedItemsList.innerHTML = '';
+                selectedItems.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'flex justify-between items-center text-sm';
+                    itemElement.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="text-white">${item.quantity}x</span>
+                            <span class="text-gray-300 ml-2">${item.name}</span>
+                        </div>
+                        <span class="text-food-gold">₱${(item.price * item.quantity).toFixed(2)}</span>
+                    `;
+                    selectedItemsList.appendChild(itemElement);
+                });
+            } else {
+                selectedItemsSummary.classList.add('hidden');
+            }
+        }
+
+        // Load menu items when checkbox is checked
+        if (hasMenuItemsCheckbox) {
+            hasMenuItemsCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    loadMenuItems();
+                }
+            });
+        }
+
+        // Add more items buttons
+        if (addMoreItemsButton) {
+            addMoreItemsButton.addEventListener('click', loadMenuItems);
+        }
+
+        if (mobileAddMoreItemsButton) {
+            mobileAddMoreItemsButton.addEventListener('click', loadMenuItems);
+        }
+
+        // Add CSS for hiding scrollbars
+        const style = document.createElement('style');
+        style.textContent = `
+            .hide-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .hide-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        `;
+        document.head.appendChild(style);
+    });
+
+    // Date picker component
+    function datePicker() {
+        return {
+            showDatepicker: false,
+            datepickerValue: '',
+            selectedDate: new Date(),
+            month: '',
+            year: '',
+            days: [],
+            blankdays: [],
+            formattedDate: '',
+
+            initDate() {
+                let today = new Date();
+                this.month = today.getMonth();
+                this.year = today.getFullYear();
+                this.selectedDate = today;
+                this.datepickerValue = this.formatDateForInput(today);
+                this.formattedDate = this.formatDateForDisplay(today);
+
+                // Set the hidden input value
+                document.getElementById('id_date').value = this.datepickerValue;
+            },
+
+            formatDateForInput(date) {
+                // Format as YYYY-MM-DD for the hidden input
+                let month = (date.getMonth() + 1).toString().padStart(2, '0');
+                let day = date.getDate().toString().padStart(2, '0');
+                return `${date.getFullYear()}-${month}-${day}`;
+            },
+
+            formatDateForDisplay(date) {
+                // Format as Month DD, YYYY for display
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                return date.toLocaleDateString('en-US', options);
+            },
+
+            isToday(day) {
+                const today = new Date();
+                return day === today.getDate() &&
+                       this.month === today.getMonth() &&
+                       this.year === today.getFullYear();
+            },
+
+            isSelectedDate(day) {
+                return day === this.selectedDate.getDate() &&
+                       this.month === this.selectedDate.getMonth() &&
+                       this.year === this.selectedDate.getFullYear();
+            },
+
+            isDateSelectable(day) {
+                // Only allow dates from today onwards
+                const today = new Date();
+                const checkDate = new Date(this.year, this.month, day);
+                return checkDate >= new Date(today.setHours(0, 0, 0, 0));
+            },
+
+            getNoOfDays() {
+                let daysInMonth = new Date(this.year, this.month + 1, 0).getDate();
+
+                // Find out the first day of the month
+                let firstDayOfMonth = new Date(this.year, this.month, 1).getDay();
+
+                let blankdaysArray = [];
+                for (let i = 0; i < firstDayOfMonth; i++) {
+                    blankdaysArray.push(i);
+                }
+
+                let daysArray = [];
+                for (let i = 1; i <= daysInMonth; i++) {
+                    daysArray.push(i);
+                }
+
+                this.blankdays = blankdaysArray;
+                this.days = daysArray;
+            },
+
+            selectDate(day) {
+                if (!this.isDateSelectable(day)) return;
+
+                this.selectedDate = new Date(this.year, this.month, day);
+                this.datepickerValue = this.formatDateForInput(this.selectedDate);
+                this.formattedDate = this.formatDateForDisplay(this.selectedDate);
+
+                // Set the hidden input value
+                document.getElementById('id_date').value = this.datepickerValue;
+
+                this.showDatepicker = false;
+            },
+
+            prevMonth() {
+                if (this.month === 0) {
+                    this.year--;
+                    this.month = 11;
+                } else {
+                    this.month--;
+                }
+                this.getNoOfDays();
+            },
+
+            nextMonth() {
+                if (this.month === 11) {
+                    this.year++;
+                    this.month = 0;
+                } else {
+                    this.month++;
+                }
+                this.getNoOfDays();
+            },
+
+            get monthYearText() {
+                const months = [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ];
+                return `${months[this.month]} ${this.year}`;
+            },
+
+            init() {
+                this.initDate();
+                this.getNoOfDays();
+            }
+        };
+    }
+</script>
+{% endblock extra_scripts %}

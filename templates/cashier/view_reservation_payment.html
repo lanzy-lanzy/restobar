@@ -1,0 +1,294 @@
+{% extends 'cashier/base.html' %}
+{% load static %}
+
+{% block title %}View Reservation Payment - Cashier Dashboard{% endblock title %}
+
+{% block page_title %}Reservation Payment Details{% endblock page_title %}
+{% block page_subtitle %}Verify payment for Reservation #{{ payment.reservation.id }}{% endblock page_subtitle %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="mb-4">
+        <span class="bg-purple-800 text-white px-2 py-1 rounded text-xs font-bold">CASHIER VIEW TEMPLATE</span>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Payment Information -->
+        <div class="lg:col-span-1">
+            <div class="card p-6 h-full">
+                <h2 class="text-xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-food-gold"></i> Payment Information
+                </h2>
+
+                <div class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-800 p-3 rounded-lg">
+                            <div class="text-xs text-gray-500 mb-1">Payment Type</div>
+                            <div class="font-medium">
+                                {% if payment.payment_type == 'FULL' %}
+                                Full Payment
+                                {% else %}
+                                50% Deposit
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded-lg">
+                            <div class="text-xs text-gray-500 mb-1">Amount</div>
+                            <div class="font-medium text-xl text-food-gold">₱{{ payment.amount }}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <div class="text-xs text-gray-500 mb-1">Payment Method</div>
+                        <div class="font-medium flex items-center">
+                            <img src="/static/images/gcash_logo.png" alt="GCash" class="h-5 mr-2">
+                            {{ payment.get_payment_method_display }}
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <div class="text-xs text-gray-500 mb-1">Reference Number</div>
+                        <div class="font-medium">{{ payment.reference_number }}</div>
+                    </div>
+
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <div class="text-xs text-gray-500 mb-1">Payment Date</div>
+                        <div class="font-medium">{{ payment.payment_date|date:"F d, Y" }} at {{ payment.payment_date|time:"H:i" }}</div>
+                    </div>
+
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <div class="text-xs text-gray-500 mb-1">Payment Status</div>
+                        <div class="font-medium">
+                            {% if payment.reservation.status != 'CONFIRMED' %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-900 text-red-300">
+                                Reservation not confirmed. Payment cannot be processed until confirmation.
+                            </span>
+                            {% else %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-900 text-yellow-300">
+                                Pending Verification
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-2">
+                            After verification, this payment will be marked as completed and the reservation will be confirmed.
+                        </div>
+                        <div class="mt-3 p-2 bg-gray-700 rounded border border-gray-600">
+                            <div class="text-xs font-medium text-food-gold mb-1">What happens after verification:</div>
+                            <ul class="text-xs text-gray-300 list-disc pl-4 space-y-1">
+                                <li>The reservation status will be updated to <span class="font-medium text-green-400">CONFIRMED</span></li>
+                                <li>The payment status will be updated to <span class="font-medium text-green-400">PAID</span> (for full payments)</li>
+                                <li>If an order exists, it will be updated with the payment information</li>
+                                <li>When processing this reservation, the payment will be automatically applied</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verification Actions -->
+                <div class="mt-8 border-t border-gray-700 pt-6">
+                    <h3 class="text-lg font-bold mb-6 flex items-center text-white">
+                        <i class="fas fa-check-double mr-2 text-food-gold"></i> Verification Actions
+                    </h3>
+
+                    <div class="bg-gray-800/70 p-5 rounded-lg border border-gray-700 shadow-lg">
+                        <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 justify-center">
+                            <form method="POST" action="{% url 'view_reservation_payment' payment.id %}" class="w-full md:w-auto">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="verify">
+                                <button type="submit" class="btn-success w-full md:w-auto">
+                                    <i class="fas fa-check-circle mr-2"></i> Verify and Complete
+                                </button>
+                            </form>
+                            <button type="button" onclick="openRejectModal()" class="btn-danger w-full md:w-auto">
+                                <i class="fas fa-times-circle mr-2"></i> Reject Payment
+                            </button>
+                        </div>
+                        <div class="text-sm text-gray-400 mt-5 text-center">
+                            <i class="fas fa-info-circle mr-1 text-blue-400"></i>
+                            Please verify payment details and proof before proceeding. Mark as verified to complete the process or reject if invalid.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reservation Details -->
+        <div class="lg:col-span-1">
+            <div class="card p-6 h-full">
+                <h2 class="text-xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-calendar-alt mr-2 text-food-gold"></i> Reservation Details
+                </h2>
+
+                <div class="space-y-4">
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <div class="text-xs text-gray-500 mb-1">Reservation #</div>
+                        <div class="font-medium">{{ payment.reservation.id }}</div>
+                    </div>
+
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <div class="text-xs text-gray-500 mb-1">Guest Name</div>
+                        <div class="font-medium">{{ payment.reservation.name }}</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-800 p-3 rounded-lg">
+                            <div class="text-xs text-gray-500 mb-1">Date</div>
+                            <div class="font-medium">{{ payment.reservation.date|date:"F d, Y" }}</div>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded-lg">
+                            <div class="text-xs text-gray-500 mb-1">Time</div>
+                            <div class="font-medium">{{ payment.reservation.time|time:"H:i" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-800 p-3 rounded-lg">
+                            <div class="text-xs text-gray-500 mb-1">Party Size</div>
+                            <div class="font-medium">{{ payment.reservation.party_size }} people</div>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded-lg">
+                            <div class="text-xs text-gray-500 mb-1">Table</div>
+                            <div class="font-medium">
+                                {% if payment.reservation.table_number %}
+                                Table {{ payment.reservation.table_number }}
+                                {% else %}
+                                Not assigned
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if payment.reservation.special_requests %}
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <div class="text-xs text-gray-500 mb-1">Special Requests</div>
+                        <div class="text-sm">{{ payment.reservation.special_requests }}</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <div class="text-xs text-gray-500 mb-1">Menu Items</div>
+                        {% if payment.includes_menu_items %}
+                            <div class="font-medium text-food-gold">₱{{ payment.reservation.total_amount }}</div>
+                            <div class="text-sm text-gray-400 mt-1">Customer has pre-ordered menu items</div>
+
+                            {% with reservation_items=payment.reservation.reservation_items.all %}
+                            {% if reservation_items %}
+                            <div class="mt-3 pt-3 border-t border-gray-700">
+                                <div class="text-xs text-gray-500 mb-2">Pre-ordered Items:</div>
+                                <div class="space-y-2">
+                                    {% for item in reservation_items %}
+                                    <div class="flex justify-between items-center bg-gray-700 p-2 rounded">
+                                        <div>
+                                            <div class="text-white text-sm">{{ item.quantity }}x {{ item.menu_item.name }}</div>
+                                            <div class="text-xs text-gray-400">₱{{ item.price }} each</div>
+                                        </div>
+                                        <div class="text-food-gold font-medium">₱{{ item.subtotal }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endwith %}
+                        {% else %}
+                            <div class="text-sm text-gray-400">No menu items ordered</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <div class="text-xs text-gray-500 mb-1">Status</div>
+                        <div class="font-medium">
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-900 text-yellow-300">
+                                {{ payment.reservation.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Proof -->
+        <div class="lg:col-span-1">
+            <div class="card p-6 h-full">
+                <h2 class="text-xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-image mr-2 text-food-gold"></i> Payment Proof
+                </h2>
+
+                {% if payment.payment_proof %}
+                <div class="flex justify-center mb-4">
+                    <div class="bg-gray-800 p-2 rounded-lg border border-gray-700 w-full">
+                        <img src="{{ payment.payment_proof.url }}" alt="Payment Proof" class="max-w-full h-auto rounded-lg object-contain mx-auto" style="max-height: 400px;">
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <a href="{{ payment.payment_proof.url }}" target="_blank" class="text-food-gold hover:text-food-gold-light transition duration-300">
+                        <i class="fas fa-external-link-alt mr-1"></i> View Full Image
+                    </a>
+                </div>
+                {% else %}
+                <div class="flex items-center justify-center h-64 bg-gray-800 rounded-lg">
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-image text-4xl mb-2"></i>
+                        <p>No payment proof provided</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+        <a href="{% url 'pending_reservation_payments' %}" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-md transition-colors duration-200 text-center">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Payments
+        </a>
+        <a href="{% url 'cashier_reservations_list' %}" class="bg-food-gold hover:bg-food-gold-light text-gray-900 font-bold py-3 px-6 rounded-md transition-colors duration-200 text-center">
+            <i class="fas fa-calendar-alt mr-2"></i> View All Reservations
+        </a>
+    </div>
+</div>
+
+<!-- Reject Payment Modal -->
+<div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <h3 class="text-xl font-bold mb-4 text-white">Reject Payment</h3>
+            <p class="text-gray-300 mb-4">Please provide a reason for rejecting this payment:</p>
+
+            <form method="post" action="{% url 'reject_reservation_payment' payment.id %}">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <textarea name="reason" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-food-gold" placeholder="Enter reason for rejection"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeRejectModal()" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition duration-300">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-300">
+                        Reject Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+    function openRejectModal() {
+        document.getElementById('rejectModal').classList.remove('hidden');
+    }
+
+    function closeRejectModal() {
+        document.getElementById('rejectModal').classList.add('hidden');
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('rejectModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeRejectModal();
+        }
+    });
+</script>
+{% endblock extra_scripts %}

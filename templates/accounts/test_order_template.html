@@ -1,0 +1,31 @@
+{% extends 'accounts/customer_base.html' %}
+{% load custom_filters %}
+{% load math_filters %}
+
+{% block title %}Test Order Template{% endblock title %}
+
+{% block content %}
+<div class="space-y-8">
+    <h1>Test Order Template</h1>
+    
+    <!-- Test for loop with empty clause -->
+    <div>
+        <h2>Test For Loop with Empty</h2>
+        {% for item in test_items %}
+            <p>{{ item }}</p>
+        {% empty %}
+            <p>No items found</p>
+        {% endfor %}
+    </div>
+    
+    <!-- Test if-else statement -->
+    <div>
+        <h2>Test If-Else</h2>
+        {% if test_condition %}
+            <p>Condition is true</p>
+        {% else %}
+            <p>Condition is false</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

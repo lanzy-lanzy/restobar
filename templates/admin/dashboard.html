@@ -1,0 +1,74 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block admin_content %}
+<div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Restaurant Admin Dashboard</h1>
+        <p class="text-gray-600 dark:text-gray-400">Overview of restaurant operations</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Today's Orders</div>
+            <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ today_orders }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">Total Orders: {{ total_orders }}</div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Today's Revenue</div>
+            <div class="text-3xl font-bold text-green-600 dark:text-green-400">{{ today_revenue|currency }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">Total Revenue: {{ total_revenue|currency }}</div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Pending Reservations</div>
+            <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ pending_reservations }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">Today's Reservations: {{ today_reservations }}</div>
+        </div>
+    </div>
+
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Popular Menu Items</h2>
+        <div class="space-y-4">
+            {% for item in popular_items %}
+            <div class="flex items-center p-3 bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600">
+                {% if item.image %}
+                <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-12 h-12 object-cover rounded-md mr-4">
+                {% else %}
+                <div class="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-md mr-4 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </div>
+                {% endif %}
+                <div>
+                    <div class="font-medium text-gray-900 dark:text-white">{{ item.name }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Ordered {{ item.order_count }} times</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Recent Reviews</h2>
+        <div class="space-y-4">
+            {% for review in recent_reviews %}
+            <div class="p-4 bg-white dark:bg-gray-700 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="font-medium text-gray-900 dark:text-white">{{ review.menu_item.name }}</div>
+                    <span class="text-yellow-500">
+                        {% for i in ""|ljust:review.rating %}★{% endfor %}
+                        {% for i in ""|ljust:5|slice:review.rating %}☆{% endfor %}
+                    </span>
+                </div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    by {{ review.user.username }} - {{ review.created_at|timesince }} ago
+                </div>
+                <p class="text-gray-700 dark:text-gray-300">{{ review.comment|truncatewords:30 }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

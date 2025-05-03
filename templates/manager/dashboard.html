@@ -1,0 +1,438 @@
+{% extends 'manager/base.html' %}
+{% load math_filters custom_filters %}
+
+{% block title %}Manager Dashboard - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block page_title %}Manager Dashboard{% endblock page_title %}
+{% block page_subtitle %}Overview of restaurant operations - {{ today_date|date:"F d, Y" }}{% endblock page_subtitle %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="stat-card p-6 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-gray-400 text-sm font-medium">Today's Sales</h3>
+                    <p class="text-2xl font-bold mt-1 text-green-400">{{ today_sales|currency }}</p>
+                </div>
+                <div class="bg-green-900 p-3 rounded-full">
+                    <i class="fas fa-peso-sign text-green-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card p-6 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-gray-400 text-sm font-medium">Weekly Sales</h3>
+                    <p class="text-2xl font-bold mt-1 text-blue-400">${{ week_sales|floatformat:2 }}</p>
+                </div>
+                <div class="bg-blue-900 p-3 rounded-full">
+                    <i class="fas fa-calendar-week text-blue-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card p-6 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-gray-400 text-sm font-medium">Monthly Sales</h3>
+                    <p class="text-2xl font-bold mt-1 text-purple-400">${{ month_sales|floatformat:2 }}</p>
+                </div>
+                <div class="bg-purple-900 p-3 rounded-full">
+                    <i class="fas fa-calendar-alt text-purple-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card p-6 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-gray-400 text-sm font-medium">Today's Orders</h3>
+                    <p class="text-2xl font-bold mt-1 text-food-gold">{{ today_orders }}</p>
+                </div>
+                <div class="bg-food-gold bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-shopping-cart text-food-gold text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Process Flow Diagram -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4 flex items-center">
+            <i class="fas fa-project-diagram text-food-gold mr-3"></i>Order Process Flow
+        </h2>
+        <div class="flex justify-center">
+            <img src="/static/img/order_process_flow.svg" alt="Order Process Flow Diagram" class="w-full max-w-3xl rounded-lg border border-food-gold/30 shadow-md bg-white">
+        </div>
+        <p class="mt-4 text-gray-400 text-sm text-center">This diagram illustrates the comprehensive order journey from placement to completion/cancellation, including all key roles and decision points.</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold">Pending Orders</h2>
+                <span class="bg-yellow-900 text-yellow-300 text-xs px-2 py-1 rounded-full">{{ pending_orders }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <div class="text-gray-400">
+                    <p>Orders awaiting processing</p>
+                </div>
+                <a href="{% url 'cashier_orders_list' %}?status=PENDING" class="text-food-gold hover:text-food-gold-light">
+                    View Orders <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold">Pending Reservations</h2>
+                <span class="bg-yellow-900 text-yellow-300 text-xs px-2 py-1 rounded-full">{{ pending_reservations }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <div class="text-gray-400">
+                    <p>Reservations awaiting confirmation</p>
+                </div>
+                <a href="{% url 'reservations_dashboard' %}?status=PENDING" class="text-food-gold hover:text-food-gold-light">
+                    View Reservations <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold">Inventory Alerts</h2>
+                <span class="bg-red-900 text-red-300 text-xs px-2 py-1 rounded-full">{{ low_stock_items|add:out_of_stock_items }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <div class="text-gray-400">
+                    <p>{{ low_stock_items }} low stock, {{ out_of_stock_items }} out of stock</p>
+                </div>
+                <a href="{% url 'inventory_overview' %}" class="text-food-gold hover:text-food-gold-light">
+                    View Inventory <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold">Active Staff</h2>
+                <span class="bg-green-900 text-green-300 text-xs px-2 py-1 rounded-full">{{ active_staff }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <div class="text-gray-400">
+                    <p>Staff members on duty</p>
+                </div>
+                <a href="{% url 'staff_overview' %}" class="text-food-gold hover:text-food-gold-light">
+                    View Staff <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Sales Chart -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">Weekly Sales Performance</h2>
+        <div class="h-80">
+            <canvas id="weeklySalesChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Top Selling Items & Cashier Sales -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card p-6 md:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Top Selling Items</h2>
+                <a href="{% url 'sales_report' %}" class="text-food-gold hover:text-food-gold-light text-sm">
+                    View All <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-gray-400 border-b border-gray-800">
+                            <th class="pb-3">Item</th>
+                            <th class="pb-3">Quantity</th>
+                            <th class="pb-3">Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in top_items %}
+                        <tr class="border-b border-gray-800">
+                            <td class="py-3">{{ item.menu_item__name }}</td>
+                            <td class="py-3">{{ item.total_quantity }}</td>
+                            <td class="py-3">₱{{ item.total_sales|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="py-4 text-center text-gray-500">No sales data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cashier Sales Today -->
+        <div class="card p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Cashier Sales Today</h2>
+                <a href="{% url 'cashier_sales_report' %}" class="text-food-gold hover:text-food-gold-light text-sm">
+                    View Report <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+
+            <div class="overflow-y-auto max-h-80">
+                <div class="space-y-3">
+                    {% for sale in cashier_sales %}
+                    <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-food-gold bg-opacity-20 flex items-center justify-center text-food-gold mr-3">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium">{{ sale.full_name }}</p>
+                                <p class="text-xs text-gray-400">{{ sale.order_count }} orders</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-green-400">₱{{ sale.total_sales|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 text-center py-4">No cashier sales today</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="card p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Recent Activities</h2>
+                <a href="{% url 'staff_activity' %}" class="text-food-gold hover:text-food-gold-light text-sm">
+                    View All <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+
+            <div class="overflow-y-auto max-h-80">
+                <div class="space-y-4">
+                    {% for activity in recent_activities %}
+                    <div class="flex items-start space-x-3 pb-3 border-b border-gray-800">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 text-xs">
+                                {{ activity.staff.first_name|first|upper }}{{ activity.staff.last_name|first|upper }}
+                            </div>
+                        </div>
+                        <div class="flex-grow">
+                            <div class="flex items-center">
+                                <span class="font-medium">{{ activity.staff.get_full_name }}</span>
+                                <span class="mx-2 text-gray-500">•</span>
+                                <span class="text-sm text-gray-400">{{ activity.timestamp|date:"M d, H:i" }}</span>
+                            </div>
+                            <div class="mt-1">
+                                <span class="px-2 py-1 rounded-full text-xs
+                                    {% if activity.action == 'LOGIN' %}bg-green-900 text-green-300
+                                    {% elif activity.action == 'LOGOUT' %}bg-blue-900 text-blue-300
+                                    {% elif activity.action == 'CREATE_ORDER' %}bg-purple-900 text-purple-300
+                                    {% elif activity.action == 'UPDATE_ORDER' %}bg-indigo-900 text-indigo-300
+                                    {% elif activity.action == 'CANCEL_ORDER' %}bg-red-900 text-red-300
+                                    {% elif activity.action == 'ADD_ITEM' %}bg-yellow-900 text-yellow-300
+                                    {% elif activity.action == 'UPDATE_ITEM' %}bg-orange-900 text-orange-300
+                                    {% elif activity.action == 'DELETE_ITEM' %}bg-pink-900 text-pink-300
+                                    {% elif activity.action == 'ADD_INVENTORY' %}bg-teal-900 text-teal-300
+                                    {% else %}bg-gray-700 text-gray-300{% endif %}">
+                                    {{ activity.get_action_display }}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-400 mt-1">{{ activity.details }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4 text-gray-500">
+                        <p>No recent activities</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Reservations -->
+    {% if recent_pending_reservations %}
+    <div class="card p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold flex items-center">
+                <i class="fas fa-bell text-yellow-500 mr-2"></i> Pending Reservations
+                <span class="ml-2 px-2 py-1 bg-red-600 text-white text-xs rounded-full animate-pulse">{{ pending_reservations_count }}</span>
+            </h2>
+            <a href="{% url 'reservations_dashboard' %}?status=PENDING" class="text-food-gold hover:text-food-gold-light text-sm">
+                View All <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 border-b border-gray-800">
+                        <th class="pb-3 pl-3">Date & Time</th>
+                        <th class="pb-3">Guest</th>
+                        <th class="pb-3">Party Size</th>
+                        <th class="pb-3">Table</th>
+                        <th class="pb-3">Submitted</th>
+                        <th class="pb-3 pr-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reservation in recent_pending_reservations %}
+                    <tr class="border-b border-gray-800 hover:bg-gray-800 transition-colors duration-200">
+                        <td class="py-4 pl-3">
+                            <div class="font-medium text-white">{{ reservation.date|date:"M d, Y" }}</div>
+                            <div class="text-sm text-gray-400">{{ reservation.time|time:"H:i" }}</div>
+                        </td>
+                        <td class="py-4">
+                            <div>{{ reservation.name }}</div>
+                            <div class="text-sm text-gray-500">{{ reservation.phone }}</div>
+                        </td>
+                        <td class="py-4">{{ reservation.party_size }} people</td>
+                        <td class="py-4">
+                            {% if reservation.table_number %}
+                            Table {{ reservation.table_number }}
+                            {% else %}
+                            Not assigned
+                            {% endif %}
+                        </td>
+                        <td class="py-4">
+                            <div class="text-sm text-gray-400">{{ reservation.created_at|timesince }} ago</div>
+                        </td>
+                        <td class="py-4 pr-3">
+                            <a href="{% url 'update_reservation_status' reservation.id %}?next=manager_dashboard"
+                               class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm inline-flex items-center">
+                                <i class="fas fa-check mr-1"></i> Confirm
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Links -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+            <a href="{% url 'sales_report' %}" class="bg-blue-900 hover:bg-blue-800 text-white p-4 rounded-lg flex flex-col items-center justify-center text-center">
+                <i class="fas fa-chart-bar text-2xl mb-2"></i>
+                <span>Sales Reports</span>
+            </a>
+
+            <a href="{% url 'inventory_overview' %}" class="bg-green-900 hover:bg-green-800 text-white p-4 rounded-lg flex flex-col items-center justify-center text-center">
+                <i class="fas fa-boxes text-2xl mb-2"></i>
+                <span>Inventory Management</span>
+            </a>
+
+            <a href="{% url 'staff_overview' %}" class="bg-purple-900 hover:bg-purple-800 text-white p-4 rounded-lg flex flex-col items-center justify-center text-center">
+                <i class="fas fa-users text-2xl mb-2"></i>
+                <span>Staff Performance</span>
+            </a>
+
+            <a href="{% url 'performance_metrics' %}" class="bg-food-gold hover:bg-food-gold-light text-white p-4 rounded-lg flex flex-col items-center justify-center text-center">
+                <i class="fas fa-chart-line text-2xl mb-2"></i>
+                <span>Performance Metrics</span>
+            </a>
+
+            <a href="{% url 'reservations_dashboard' %}?status=PENDING" class="bg-yellow-900 hover:bg-yellow-800 text-white p-4 rounded-lg flex flex-col items-center justify-center text-center relative">
+                <i class="fas fa-calendar-alt text-2xl mb-2"></i>
+                <span>Reservations</span>
+                {% if pending_reservations > 0 %}
+                <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">{{ pending_reservations }}</span>
+                {% endif %}
+            </a>
+
+            <a href="{% url 'manager_profile_edit' %}" class="bg-teal-900 hover:bg-teal-800 text-white p-4 rounded-lg flex flex-col items-center justify-center text-center">
+                <i class="fas fa-user-edit text-2xl mb-2"></i>
+                <span>Edit Profile</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Weekly Sales Chart
+        const ctx = document.getElementById('weeklySalesChart').getContext('2d');
+
+        const weeklySalesChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_labels|safe }},
+                datasets: [{
+                    label: 'Daily Sales',
+                    data: {{ chart_data|safe }},
+                    backgroundColor: 'rgba(249, 168, 38, 0.7)',
+                    borderColor: 'rgba(249, 168, 38, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#E5E7EB'
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#9CA3AF'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#9CA3AF',
+                            callback: function(value) {
+                                return '₱' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock extra_scripts %}

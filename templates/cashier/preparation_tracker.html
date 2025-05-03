@@ -1,0 +1,678 @@
+{% extends 'cashier/base.html' %}
+{% load static %}
+
+{% block title %}Preparation Tracker - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block page_title %}Preparation Tracker{% endblock page_title %}
+{% block page_subtitle %}Track and manage preparation progress for reservations and orders{% endblock page_subtitle %}
+
+{% block extra_css %}
+<style>
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background-color: #1F2937;
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-pending {
+        background-color: rgba(245, 158, 11, 0.2);
+        color: #F59E0B;
+    }
+
+    .status-in-progress {
+        background-color: rgba(59, 130, 246, 0.2);
+        color: #3B82F6;
+    }
+
+    .status-ready {
+        background-color: rgba(16, 185, 129, 0.2);
+        color: #10B981;
+    }
+
+    .status-completed {
+        background-color: rgba(139, 92, 246, 0.2);
+        color: #8B5CF6;
+    }
+
+    .status-cancelled {
+        background-color: rgba(239, 68, 68, 0.2);
+        color: #EF4444;
+    }
+
+    .preparation-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .preparation-table th {
+        text-align: left;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        border-bottom: 2px solid #374151;
+        background-color: rgba(31, 41, 55, 0.5);
+    }
+
+    .preparation-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #374151;
+    }
+
+    .preparation-table tr:hover td {
+        background-color: rgba(55, 65, 81, 0.3);
+    }
+
+    .preparation-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .timer {
+        font-family: monospace;
+        font-size: 1.25rem;
+        font-weight: bold;
+    }
+
+    .timer-warning {
+        color: #F59E0B;
+    }
+
+    .timer-danger {
+        color: #EF4444;
+        animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .tab-button {
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .tab-button.active {
+        border-bottom-color: #F9A826;
+        color: #F9A826;
+    }
+
+    .preparation-step {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .preparation-step:before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0.5rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        background-color: #1F2937;
+        border: 2px solid #4B5563;
+    }
+
+    .preparation-step.completed:before {
+        background-color: #10B981;
+        border-color: #059669;
+    }
+
+    .preparation-step.in-progress:before {
+        background-color: #3B82F6;
+        border-color: #2563EB;
+    }
+
+    .preparation-step.pending:before {
+        background-color: #1F2937;
+        border-color: #4B5563;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Filters and Search -->
+    <div class="card p-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-2">
+                <button id="tab-all" class="tab-button active">All</button>
+                <button id="tab-reservations" class="tab-button">Reservations</button>
+                <button id="tab-orders" class="tab-button">Orders</button>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <div class="relative">
+                    <input id="search-input" type="text" placeholder="Search by name or ID..." class="bg-gray-700 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white w-64">
+                    <div class="absolute left-3 top-2.5 text-gray-400">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+
+                <select id="status-filter" class="bg-gray-700 border border-gray-600 rounded-lg py-2 px-4 text-white">
+                    <option value="all">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="ready">Ready</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="card p-4 bg-gradient-to-br from-gray-800 to-gray-900">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Total Preparations</p>
+                    <h3 class="text-2xl font-bold text-white">{{ total_preparations }}</h3>
+                </div>
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <i class="fas fa-clipboard-list text-food-gold text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 bg-gradient-to-br from-gray-800 to-blue-900/30">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">In Progress</p>
+                    <h3 class="text-2xl font-bold text-blue-400">{{ in_progress_count }}</h3>
+                </div>
+                <div class="bg-blue-900/50 p-3 rounded-lg">
+                    <i class="fas fa-spinner fa-spin text-blue-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 bg-gradient-to-br from-gray-800 to-green-900/30">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Ready to Serve</p>
+                    <h3 class="text-2xl font-bold text-green-400">{{ ready_count }}</h3>
+                </div>
+                <div class="bg-green-900/50 p-3 rounded-lg">
+                    <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 bg-gradient-to-br from-gray-800 to-purple-900/30">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Completed Today</p>
+                    <h3 class="text-2xl font-bold text-purple-400">{{ completed_today }}</h3>
+                </div>
+                <div class="bg-purple-900/50 p-3 rounded-lg">
+                    <i class="fas fa-flag-checkered text-purple-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preparation Cards -->
+    <div class="mb-6">
+        <!-- Process Flow Explanation -->
+        <div class="card p-6 mb-6 bg-gray-800/50">
+            <h3 class="text-lg font-bold mb-3 flex items-center">
+                <i class="fas fa-info-circle mr-2 text-blue-400"></i> Preparation Process Flow
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Reservation Process Flow -->
+                <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-blue-500">
+                    <h4 class="font-bold text-blue-400 mb-2">Reservation Process</h4>
+                    <ol class="list-decimal pl-5 space-y-1 text-gray-300">
+                        <li>Customer makes a reservation and pays deposit</li>
+                        <li>Cashier verifies payment and confirms reservation</li>
+                        <li>On arrival, cashier processes the reservation</li>
+                        <li>Kitchen prepares the order</li>
+                        <li>Cashier marks the order as ready when completed</li>
+                    </ol>
+                </div>
+
+                <!-- Walk-in Process Flow -->
+                <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-food-gold">
+                    <h4 class="font-bold text-food-gold mb-2">Walk-in Order Process</h4>
+                    <ol class="list-decimal pl-5 space-y-1 text-gray-300">
+                        <li>Cashier creates a new order for walk-in customer</li>
+                        <li>Order is marked as pending or preparing</li>
+                        <li>Kitchen prepares the order</li>
+                        <li>Order is marked as ready when completed</li>
+                        <li>Cashier marks the order as served/completed</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two-column layout for Reservations and Orders -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Reservations Column -->
+        <div>
+            <div class="card p-4 mb-4 bg-blue-900/20 border border-blue-800">
+                <h3 class="text-lg font-bold flex items-center">
+                    <i class="fas fa-calendar-check mr-2 text-blue-400"></i> Reservations
+                </h3>
+            </div>
+
+            <div class="card p-4">
+                <div class="overflow-x-auto">
+                    <table class="preparation-table" data-type="reservation-table">
+                        <thead>
+                            <tr>
+                                <th>ID/Customer</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Table</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reservation in reservations %}
+                            <tr data-type="reservation" data-status="{{ reservation.status|lower }}" data-name="{{ reservation.name }}" data-id="{{ reservation.id }}">
+                                <td>
+                                    <div class="font-bold">#{{ reservation.id }}</div>
+                                    <div class="text-sm text-gray-400">{{ reservation.name }} • Party of {{ reservation.party_size }}</div>
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        {% if reservation.has_menu_items %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-food-gold/20 text-food-gold border border-food-gold/30">
+                                            <i class="fas fa-utensils mr-1"></i> Pre-ordered
+                                        </span>
+                                        {% endif %}
+                                        {% if reservation.prepare_ahead %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-800/30 text-yellow-300 border border-yellow-800/30">
+                                            <i class="fas fa-clock mr-1"></i> Prepare Early
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-badge
+                                        {% if reservation.status == 'CONFIRMED' %}status-in-progress
+                                        {% elif reservation.status == 'COMPLETED' %}status-completed
+                                        {% elif reservation.status == 'CANCELLED' %}status-cancelled
+                                        {% else %}status-pending{% endif %}">
+                                        {% if reservation.status == 'CONFIRMED' %}<i class="fas fa-spinner fa-spin mr-1"></i> In Progress
+                                        {% elif reservation.status == 'COMPLETED' %}<i class="fas fa-flag-checkered mr-1"></i> Completed
+                                        {% elif reservation.status == 'CANCELLED' %}<i class="fas fa-times-circle mr-1"></i> Cancelled
+                                        {% else %}<i class="fas fa-clock mr-1"></i> Pending{% endif %}
+                                    </span>
+                                    <div class="mt-2">
+                                        <div class="text-xs text-gray-400 mb-1">Progress: {% if reservation.status == 'COMPLETED' %}100%{% elif reservation.status == 'CONFIRMED' %}60%{% else %}0%{% endif %}</div>
+                                        <div class="progress-bar w-24">
+                                            <div class="progress-bar-fill {% if reservation.status == 'COMPLETED' %}bg-green-500{% elif reservation.status == 'CONFIRMED' %}bg-blue-500{% else %}bg-yellow-500{% endif %}"
+                                                style="width: {% if reservation.status == 'COMPLETED' %}100%{% elif reservation.status == 'CONFIRMED' %}60%{% else %}0%{% endif %}"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="timer">{{ reservation.time|time:"H:i" }}</div>
+                                    <div class="text-xs text-gray-400">{{ reservation.date }}</div>
+                                </td>
+                                <td>
+                                    <div class="font-medium">Table {{ reservation.table_number|default:'-' }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-xs space-y-1">
+                                        <div class="{% if reservation.status in 'COMPLETED CONFIRMED' %}text-green-400{% else %}text-gray-400{% endif %}">
+                                            <i class="fas {% if reservation.status in 'COMPLETED CONFIRMED' %}fa-check-circle{% else %}fa-circle{% endif %} mr-1"></i> Order Received
+                                        </div>
+                                        <div class="{% if reservation.status in 'COMPLETED CONFIRMED' %}text-green-400{% else %}text-gray-400{% endif %}">
+                                            <i class="fas {% if reservation.status in 'COMPLETED CONFIRMED' %}fa-check-circle{% else %}fa-circle{% endif %} mr-1"></i> Food Preparation
+                                        </div>
+                                        <div class="{% if reservation.status == 'COMPLETED' %}text-green-400{% else %}text-gray-400{% endif %}">
+                                            <i class="fas {% if reservation.status == 'COMPLETED' %}fa-check-circle{% else %}fa-circle{% endif %} mr-1"></i> Quality Check
+                                        </div>
+                                        <div class="{% if reservation.status == 'COMPLETED' %}text-green-400{% else %}text-gray-400{% endif %}">
+                                            <i class="fas {% if reservation.status == 'COMPLETED' %}fa-check-circle{% else %}fa-circle{% endif %} mr-1"></i> Ready to Serve
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="flex flex-col space-y-2">
+                                        <a href="{% url 'process_reservation' reservation.id %}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-sm text-center">
+                                            <i class="fas fa-eye mr-1"></i> Details
+                                        </a>
+                                        {% if reservation.status == 'CONFIRMED' %}
+                                        <form method="post" action="{% url 'cashier_mark_prepared' reservation.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm w-full">
+                                                <i class="fas fa-check mr-1"></i> Mark Ready
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-8 text-gray-400">
+                                    <i class="fas fa-calendar-alt text-4xl mb-2"></i>
+                                    <div>No reservations found.</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Column -->
+        <div>
+            <div class="card p-4 mb-4 bg-food-gold/10 border border-food-gold/30">
+                <h3 class="text-lg font-bold flex items-center">
+                    <i class="fas fa-utensils mr-2 text-food-gold"></i> Walk-in Orders
+                </h3>
+            </div>
+
+            <div class="card p-4">
+                <div class="overflow-x-auto">
+                    <table class="preparation-table" data-type="order-table">
+                        <thead>
+                            <tr>
+                                <th>ID/Customer</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Table</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr data-type="order" data-status="{{ order.status|lower }}" data-name="{{ order.customer_name|default:'Walk-in Customer' }}" data-id="{{ order.id }}">
+                                <td>
+                                    <div class="font-bold">#{{ order.id }}</div>
+                                    <div class="text-sm text-gray-400">{{ order.customer_name|default:'Walk-in Customer' }} • {{ order.get_order_type_display }}</div>
+                                </td>
+                                <td>
+                                    <span class="status-badge
+                                        {% if order.status == 'READY' %}status-ready
+                                        {% elif order.status == 'PROCESSING' or order.status == 'PREPARING' %}status-in-progress
+                                        {% elif order.status == 'PENDING' %}status-pending
+                                        {% elif order.status == 'COMPLETED' %}status-completed
+                                        {% else %}status-cancelled{% endif %}">
+                                        {% if order.status == 'READY' %}<i class="fas fa-check-circle mr-1"></i> Ready
+                                        {% elif order.status == 'PROCESSING' or order.status == 'PREPARING' %}<i class="fas fa-spinner fa-spin mr-1"></i> In Progress
+                                        {% elif order.status == 'PENDING' %}<i class="fas fa-clock mr-1"></i> Pending
+                                        {% elif order.status == 'COMPLETED' %}<i class="fas fa-flag-checkered mr-1"></i> Completed
+                                        {% else %}<i class="fas fa-times-circle mr-1"></i> Cancelled{% endif %}
+                                    </span>
+                                    <div class="mt-2">
+                                        <div class="text-xs text-gray-400 mb-1">Progress: {% if order.status == 'READY' %}100%{% elif order.status == 'PROCESSING' or order.status == 'PREPARING' %}60%{% elif order.status == 'PENDING' %}0%{% else %}100%{% endif %}</div>
+                                        <div class="progress-bar w-24">
+                                            <div class="progress-bar-fill {% if order.status == 'READY' %}bg-green-500{% elif order.status == 'PROCESSING' or order.status == 'PREPARING' %}bg-blue-500{% elif order.status == 'PENDING' %}bg-yellow-500{% else %}bg-gray-500{% endif %}"
+                                                style="width: {% if order.status == 'READY' %}100%{% elif order.status == 'PROCESSING' or order.status == 'PREPARING' %}60%{% elif order.status == 'PENDING' %}0%{% else %}100%{% endif %};"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="timer {% if order.status == 'READY' %}text-green-400{% endif %}">
+                                        {% if order.status == 'READY' %}00:00{% else %}--:--{% endif %}
+                                    </div>
+                                    <div class="text-xs text-gray-400">{{ order.created_at|time:"h:i A" }}</div>
+                                </td>
+                                <td>
+                                    <div class="font-medium">Table {{ order.table_number|default:'-' }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-xs space-y-1">
+                                        <div class="{% if order.status in 'COMPLETED READY PROCESSING PREPARING' %}text-green-400{% else %}text-gray-400{% endif %}">
+                                            <i class="fas {% if order.status in 'COMPLETED READY PROCESSING PREPARING' %}fa-check-circle{% else %}fa-circle{% endif %} mr-1"></i> Order Received
+                                        </div>
+                                        <div class="{% if order.status in 'COMPLETED READY PROCESSING PREPARING' %}text-green-400{% else %}text-gray-400{% endif %}">
+                                            <i class="fas {% if order.status in 'COMPLETED READY PROCESSING PREPARING' %}fa-check-circle{% else %}fa-circle{% endif %} mr-1"></i> Food Preparation
+                                        </div>
+                                        <div class="{% if order.status in 'COMPLETED READY' %}text-green-400{% else %}text-gray-400{% endif %}">
+                                            <i class="fas {% if order.status in 'COMPLETED READY' %}fa-check-circle{% else %}fa-circle{% endif %} mr-1"></i> Quality Check
+                                        </div>
+                                        <div class="{% if order.status in 'COMPLETED READY' %}text-green-400{% else %}text-gray-400{% endif %}">
+                                            <i class="fas {% if order.status in 'COMPLETED READY' %}fa-check-circle{% else %}fa-circle{% endif %} mr-1"></i> Ready to Serve
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="flex flex-col space-y-2">
+                                        <a href="{% url 'view_order' order.id %}" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-sm text-center">
+                                            <i class="fas fa-eye mr-1"></i> Details
+                                        </a>
+                                        {% if order.status == 'READY' %}
+                                        <form method="post" action="{% url 'update_order_status' order.id %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="COMPLETED">
+                                            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-sm w-full">
+                                                <i class="fas fa-utensils mr-1"></i> Serve
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-8 text-gray-400">
+                                    <i class="fas fa-shopping-cart text-4xl mb-2"></i>
+                                    <div>No walk-in orders found.</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer View Section -->
+    <div class="card p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Customer View</h2>
+            <button id="show-display" class="bg-food-gold hover:bg-food-gold-light text-gray-900 px-4 py-2 rounded-lg text-sm font-bold">
+                <i class="fas fa-tv mr-1"></i> Show on Display
+            </button>
+        </div>
+
+        <div class="bg-gray-900 p-6 rounded-lg border border-gray-700">
+            <div class="text-center mb-6">
+                <img src="{% static 'logo/5th_avenue_logo.jpg' %}" alt="5th Avenue Logo" class="h-16 mx-auto mb-2">
+                <h2 class="text-2xl font-bold text-food-gold">Preparation Status</h2>
+                <p class="text-gray-400">Track your order in real-time</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6">
+                <!-- Reservations Table -->
+                <div class="bg-gray-800 p-4 rounded-lg">
+                    <h3 class="text-lg font-bold mb-3 text-blue-400">Reservations</h3>
+                    <div class="overflow-x-auto">
+                        <table class="preparation-table">
+                            <thead>
+                                <tr>
+                                    <th>Table</th>
+                                    <th>Customer</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reservation in reservations %}
+                                <tr>
+                                    <td>{{ reservation.table_number|default:'-' }}</td>
+                                    <td>{{ reservation.name }} <span class="text-xs text-gray-400">({{ reservation.party_size }})</span></td>
+                                    <td>{{ reservation.time|time:"h:i A" }}</td>
+                                    <td>
+                                        <span class="status-badge {% if reservation.status == 'COMPLETED' %}status-ready{% elif reservation.status == 'CONFIRMED' %}status-in-progress{% else %}status-pending{% endif %}">
+                                            {% if reservation.status == 'COMPLETED' %}<i class="fas fa-check-circle mr-1"></i> Ready
+                                            {% elif reservation.status == 'CONFIRMED' %}<i class="fas fa-spinner fa-spin mr-1"></i> In Progress
+                                            {% else %}<i class="fas fa-clock mr-1"></i> Pending{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center">
+                                            <div class="progress-bar w-24 mr-2">
+                                                <div class="progress-bar-fill {% if reservation.status == 'COMPLETED' %}bg-green-500{% elif reservation.status == 'CONFIRMED' %}bg-blue-500{% else %}bg-yellow-500{% endif %}"
+                                                    style="width: {% if reservation.status == 'COMPLETED' %}100%{% elif reservation.status == 'CONFIRMED' %}60%{% else %}0%{% endif %};"></div>
+                                            </div>
+                                            <span class="text-xs {% if reservation.status == 'COMPLETED' %}text-green-400{% elif reservation.status == 'CONFIRMED' %}text-blue-400{% else %}text-yellow-400{% endif %}">
+                                                {% if reservation.status == 'COMPLETED' %}100%{% elif reservation.status == 'CONFIRMED' %}60%{% else %}0%{% endif %}
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-gray-400">
+                                        <i class="fas fa-folder-open mr-2"></i> No reservations found.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Orders Table -->
+                <div class="bg-gray-800 p-4 rounded-lg">
+                    <h3 class="text-lg font-bold mb-3 text-food-gold">Walk-in Orders</h3>
+                    <div class="overflow-x-auto">
+                        <table class="preparation-table">
+                            <thead>
+                                <tr>
+                                    <th>Table</th>
+                                    <th>Customer</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>{{ order.table_number|default:'-' }}</td>
+                                    <td>{{ order.customer_name|default:'Walk-in Customer' }}</td>
+                                    <td>{{ order.created_at|time:"h:i A" }}</td>
+                                    <td>
+                                        <span class="status-badge {% if order.status == 'READY' %}status-ready{% elif order.status == 'PROCESSING' %}status-in-progress{% elif order.status == 'PENDING' %}status-pending{% else %}status-cancelled{% endif %}">
+                                            {% if order.status == 'READY' %}<i class="fas fa-check-circle mr-1"></i> Ready
+                                            {% elif order.status == 'PROCESSING' %}<i class="fas fa-spinner fa-spin mr-1"></i> In Progress
+                                            {% elif order.status == 'PENDING' %}<i class="fas fa-clock mr-1"></i> Pending
+                                            {% else %}<i class="fas fa-times-circle mr-1"></i> Cancelled{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center">
+                                            <div class="progress-bar w-24 mr-2">
+                                                <div class="progress-bar-fill {% if order.status == 'READY' %}bg-green-500{% elif order.status == 'PROCESSING' %}bg-blue-500{% elif order.status == 'PENDING' %}bg-yellow-500{% else %}bg-gray-500{% endif %}"
+                                                    style="width: {% if order.status == 'READY' %}100%{% elif order.status == 'PROCESSING' %}60%{% elif order.status == 'PENDING' %}0%{% else %}100%{% endif %};"></div>
+                                            </div>
+                                            <span class="text-xs {% if order.status == 'READY' %}text-green-400{% elif order.status == 'PROCESSING' %}text-blue-400{% elif order.status == 'PENDING' %}text-yellow-400{% else %}text-gray-400{% endif %}">
+                                                {% if order.status == 'READY' %}100%{% elif order.status == 'PROCESSING' %}60%{% elif order.status == 'PENDING' %}0%{% else %}100%{% endif %}
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-gray-400">
+                                        <i class="fas fa-folder-open mr-2"></i> No orders found.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const rows = document.querySelectorAll('tr[data-type]');
+        const searchInput = document.getElementById('search-input');
+        const statusFilter = document.getElementById('status-filter');
+        let activeTab = 'all';
+
+        function filterRows() {
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            const statusValue = statusFilter.value;
+
+            // First, show all tables
+            document.querySelectorAll('table[data-type]').forEach(table => {
+                const tableType = table.dataset.type;
+                const tableContainer = table.closest('.card');
+                tableContainer.style.display = (activeTab === 'all' || tableType.includes(activeTab)) ? '' : 'none';
+            });
+
+            // Then filter rows within visible tables
+            rows.forEach(row => {
+                const type = row.dataset.type;
+                const status = row.dataset.status;
+                const name = row.dataset.name ? row.dataset.name.toLowerCase() : '';
+                const id = row.dataset.id ? row.dataset.id.toString() : '';
+                let visible = true;
+
+                if (activeTab !== 'all' && type !== activeTab) visible = false;
+                if (statusValue !== 'all' && status !== statusValue) visible = false;
+                if (searchTerm && !(name.includes(searchTerm) || id.includes(searchTerm))) visible = false;
+
+                row.style.display = visible ? '' : 'none';
+            });
+
+            // Check if any rows are visible in each table, if not show empty message
+            document.querySelectorAll('table[data-type]').forEach(table => {
+                const visibleRows = table.querySelectorAll('tbody tr[data-type]:not([style*="display: none"])').length;
+                const emptyRow = table.querySelector('tbody tr:not([data-type])');
+
+                if (emptyRow) {
+                    emptyRow.style.display = visibleRows === 0 ? '' : 'none';
+                }
+            });
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                activeTab = this.id.replace('tab-', '');
+                filterRows();
+            });
+        });
+
+        searchInput.addEventListener('input', filterRows);
+        statusFilter.addEventListener('change', filterRows);
+
+        // initial filter
+        filterRows();
+    });
+</script>
+{% endblock extra_scripts %}

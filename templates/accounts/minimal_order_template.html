@@ -1,0 +1,17 @@
+{% extends 'accounts/customer_base.html' %}
+
+{% block title %}Minimal Order Template{% endblock title %}
+
+{% block content %}
+<div class="space-y-8">
+    <h1>Order #{{ order.id }}</h1>
+    <p>Status: {{ order.get_status_display }}</p>
+    
+    <h2>Order Items</h2>
+    <ul>
+        {% for item in order_items %}
+        <li>{{ item.menu_item.name }} - {{ item.quantity }} x ₱{{ item.price|floatformat:2 }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

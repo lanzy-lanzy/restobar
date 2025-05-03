@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include 'components/base/head.html' %}
+    <!-- Add performance optimizations -->
+    <script>
+        // Disable transitions on page load for better performance
+        document.documentElement.classList.add('no-transitions');
+        window.addEventListener('load', function() {
+            requestAnimationFrame(function() {
+                document.documentElement.classList.remove('no-transitions');
+            });
+        });
+    </script>
+</head>
+<body class="bg-food-black text-white min-h-screen">
+    {% include 'components/header/nav.html' %}
+
+    <main>
+        {% block content %}
+        {% endblock content %}
+    </main>
+
+    {% include 'components/footer/footer.html' %}
+
+    <!-- Django Messages -->
+    {% include 'components/messages/messages.html' %}
+
+    <!-- Customer Notifications -->
+    {% include 'components/notifications/customer_notifications.html' %}
+
+    <!-- HTMX CSRF Configuration -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add CSRF token to all HTMX requests
+            document.body.addEventListener('htmx:configRequest', function(evt) {
+                if (evt.detail.verb === 'post' || evt.detail.verb === 'put' || evt.detail.verb === 'delete') {
+                    evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+                }
+            });
+
+            // Handle message fadeout
+            const messages = document.querySelectorAll('.message-item');
+            if (messages.length > 0) {
+                messages.forEach(function(message) {
+                    setTimeout(function() {
+                        message.style.opacity = '0';
+                        setTimeout(function() {
+                            message.remove();
+                        }, 500); // Wait for the transition to complete
+                    }, 5000); // 5 seconds before starting to fade out
+                });
+            }
+        });
+    </script>
+
+    {% block extra_scripts %}{% endblock extra_scripts %}
+</body>
+</html>

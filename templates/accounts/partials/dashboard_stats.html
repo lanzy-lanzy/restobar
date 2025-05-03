@@ -1,0 +1,87 @@
+{% load math_filters %}
+{% load custom_filters %}
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="stat-card bg-gradient-to-br from-amber-900/30 to-food-gold/20 rounded-lg p-6 shadow-lg border border-food-gold/30 hover:border-food-gold/70 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">Total Orders</h2>
+            <div class="w-12 h-12 rounded-full bg-food-gold/20 flex items-center justify-center text-food-gold border border-food-gold/30">
+                <i class="fas fa-shopping-bag text-xl"></i>
+            </div>
+        </div>
+        <div class="text-4xl font-bold text-white mb-1">{{ total_orders|default:"0" }}</div>
+        <div class="text-gray-300 text-sm mt-2 flex items-center">
+            <i class="fas fa-history mr-2 text-food-gold/70"></i>
+            <span>Lifetime orders</span>
+        </div>
+    </div>
+
+    <div class="stat-card bg-gradient-to-br from-blue-900/30 to-blue-500/20 rounded-lg p-6 shadow-lg border border-blue-500/30 hover:border-blue-500/70 transition-all duration-300 hover:shadow-xl hover:-translate-y-1" x-data="{showBreakdown: false}">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">Total Spent</h2>
+            <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 border border-blue-500/30">
+                <i class="fas fa-peso-sign text-xl"></i>
+            </div>
+        </div>
+        <div class="text-4xl font-bold text-white mb-1">{{ total_spent|currency|default:"₱0.00" }}</div>
+        <div class="text-gray-300 text-sm mt-2 flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-wallet mr-2 text-blue-400/70"></i>
+                <span>Lifetime spending</span>
+            </div>
+            <button @click="showBreakdown = !showBreakdown" class="text-blue-400 hover:text-blue-300 transition-colors duration-200">
+                <i class="fas" :class="showBreakdown ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+            </button>
+        </div>
+        
+        <!-- Spending Breakdown -->
+        <div x-show="showBreakdown" x-transition class="mt-3 pt-3 border-t border-blue-500/20">
+            <div class="text-xs text-blue-300 mb-2">Spending Breakdown</div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="flex justify-between items-center bg-blue-900/20 p-2 rounded">
+                    <span class="text-gray-300">Orders:</span>
+                    <span class="text-blue-300 font-medium">{{ orders_total|currency }}</span>
+                </div>
+                <div class="flex justify-between items-center bg-blue-900/20 p-2 rounded">
+                    <span class="text-gray-300">Reservations:</span>
+                    <span class="text-blue-300 font-medium">{{ reservations_total|currency }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card bg-gradient-to-br from-green-900/30 to-green-500/20 rounded-lg p-6 shadow-lg border border-green-500/30 hover:border-green-500/70 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">Avg. Order</h2>
+            <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 border border-green-500/30">
+                <i class="fas fa-chart-line text-xl"></i>
+            </div>
+        </div>
+        <div class="text-4xl font-bold text-white mb-1">
+            {% if total_orders > 0 %}
+            {{ total_spent|div:total_orders|currency }}
+            {% else %}
+            ₱0.00
+            {% endif %}
+        </div>
+        <div class="text-gray-300 text-sm mt-2 flex items-center">
+            <i class="fas fa-calculator mr-2 text-green-400/70"></i>
+            <span>Average order value</span>
+        </div>
+    </div>
+
+    <div class="stat-card bg-gradient-to-br from-purple-900/30 to-purple-500/20 rounded-lg p-6 shadow-lg border border-purple-500/30 hover:border-purple-500/70 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">Reviews</h2>
+            <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 border border-purple-500/30">
+                <i class="fas fa-star text-xl"></i>
+            </div>
+        </div>
+        <div class="text-4xl font-bold text-white mb-1">{{ user_reviews|length|default:"0" }}</div>
+        <div class="text-gray-300 text-sm mt-2 flex items-center">
+            <i class="fas fa-comment-alt mr-2 text-purple-400/70"></i>
+            <span>Total reviews submitted</span>
+        </div>
+    </div>
+</div>
