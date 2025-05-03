@@ -90,3 +90,8 @@ def format_menu_items(menu_items_data):
 def has_pending_payment(reservation):
     """Check if a reservation has any pending payments"""
     return reservation.payments.filter(status='PENDING').exists()
+
+@register.filter
+def filter_by_status(orders, status):
+    """Filter a queryset of orders by status"""
+    return [order for order in orders if order.status == status]

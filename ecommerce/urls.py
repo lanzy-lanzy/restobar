@@ -3,11 +3,11 @@ from django.urls import path
 from .views import (
     home, filter_menu, menu, add_to_cart, view_cart, update_cart_item, checkout, gcash_payment, order_confirmation,
     user_login, user_logout, user_register, user_dashboard, add_menu_item, menu_items_list, categories_list,
-    orders_list, reservations_list, reviews_list, user_settings,
+    orders_list, admin_view_order, reservations_list, reviews_list, user_settings,
     edit_menu_item, delete_menu_item, edit_category, delete_category,
     customer_dashboard, my_orders, my_reviews, profile, change_password,
     make_reservation, reservation_payment, my_reservations, edit_reservation, cancel_reservation, update_reservation_status,
-    customer_cancel_order, view_customer_order, track_preparation
+    customer_cancel_order, view_customer_order, order_details_api, track_preparation, view_reservation, reservation_feedback
 )
 from .api import menu_items_api, reservation_detail_api
 from .admin import admin_dashboard
@@ -61,6 +61,7 @@ urlpatterns = [
     path('customer/dashboard/', customer_dashboard, name='customer_dashboard'),
     path('customer/orders/', my_orders, name='my_orders'),
     path('customer/orders/<int:order_id>/', view_customer_order, name='view_customer_order'),
+    path('customer/orders/<int:order_id>/details/', order_details_api, name='order_details_api'),
     path('customer/orders/<int:order_id>/cancel/', customer_cancel_order, name='customer_cancel_order'),
     path('track/<str:tracking_type>/<int:tracking_id>/', track_preparation, name='track_preparation'),
     path('customer/reviews/', my_reviews, name='my_reviews'),
@@ -80,9 +81,11 @@ urlpatterns = [
 
     # Orders Management
     path('dashboard/orders/', orders_list, name='orders'),
+    path('dashboard/orders/<int:order_id>/', admin_view_order, name='admin_view_order'),
 
     # Reservations Management
     path('dashboard/reservations/', reservations_list, name='reservations'),
+    path('dashboard/reservations/<int:reservation_id>/', view_reservation, name='view_reservation'),
 
     # Customer Reservations
     path('reservations/', make_reservation, name='make_reservation'),
@@ -90,6 +93,7 @@ urlpatterns = [
     path('customer/reservations/', my_reservations, name='my_reservations'),
     path('customer/reservations/<int:reservation_id>/edit/', edit_reservation, name='edit_reservation'),
     path('customer/reservations/<int:reservation_id>/cancel/', cancel_reservation, name='cancel_reservation'),
+    path('customer/reservations/<int:reservation_id>/feedback/', reservation_feedback, name='reservation_feedback'),
 
     # Reviews Management
     path('dashboard/reviews/', reviews_list, name='reviews'),

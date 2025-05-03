@@ -564,15 +564,43 @@ def user_register(request):
         return redirect_based_on_role(request.user)
 
     if request.method == 'POST':
-        form = RegistrationForm(request.POST)
+        form = RegistrationForm(request.POST, request.FILES)
         if form.is_valid():
-            user = form.save()
-            # Always update the customer profile with phone after registration
+            # Create the user but don't save profile yet
+            user = form.save(commit=False)
+            user.save()
+
+            # Explicitly create and update the customer profile
             from .models import CustomerProfile
-            profile, _ = CustomerProfile.objects.get_or_create(user=user)
-            profile.phone = form.cleaned_data.get('phone', '')
-            profile.address = form.cleaned_data.get('address', '')
-            profile.save()
+
+            # First, delete any existing profile to ensure a clean creation
+            CustomerProfile.objects.filter(user=user).delete()
+
+            # Get profile picture and phone from form
+            profile_picture = form.cleaned_data.get('profile_picture')
+            phone = form.cleaned_data.get('phone', '')
+
+            # Validate required fields
+            if not profile_picture and CustomerProfile._meta.get_field('profile_picture').required:
+                messages.error(request, 'Profile picture is required.')
+                # Delete the user if we can't create a valid profile
+                user.delete()
+                return render(request, 'accounts/register.html', {'form': form})
+
+            if not phone and CustomerProfile._meta.get_field('phone').required:
+                messages.error(request, 'Phone number is required.')
+                # Delete the user if we can't create a valid profile
+                user.delete()
+                return render(request, 'accounts/register.html', {'form': form})
+
+            # Create a new profile with all required fields
+            profile = CustomerProfile.objects.create(
+                user=user,
+                phone=phone,
+                address=form.cleaned_data.get('address', ''),
+                profile_picture=profile_picture
+            )
+
             # Log the user in after registration
             login(request, user)
             messages.success(request, 'Registration successful! Welcome to 5th Avenue Grill and Restobar.')
@@ -839,6 +867,56 @@ def orders_list(request):
     }
 
     return render(request, 'accounts/orders.html', context)
+
+
+@login_required
+def admin_view_order(request, order_id):
+    """View detailed information about an order (admin/staff view)"""
+    # Check if user has permission to view all orders
+    if not request.user.is_staff:
+        return redirect('dashboard')
+
+    order = get_object_or_404(Order, id=order_id)
+    order_items = order.order_items.all()
+
+    # Get payment information if available
+    payment = Payment.objects.filter(order=order).first()
+
+    # Calculate time elapsed since order creation
+    time_elapsed = None
+    if order.created_at:
+        time_elapsed = timezone.now() - order.created_at
+
+    # Get order timeline data
+    timeline_events = [
+        {'time': order.created_at, 'status': 'Order Placed', 'icon': 'fa-shopping-cart', 'color': 'text-blue-400'}
+    ]
+
+    if order.preparing_at:
+        timeline_events.append({'time': order.preparing_at, 'status': 'Preparing', 'icon': 'fa-utensils', 'color': 'text-yellow-400'})
+
+    if order.ready_at:
+        timeline_events.append({'time': order.ready_at, 'status': 'Ready for Pickup/Delivery', 'icon': 'fa-check-circle', 'color': 'text-green-400'})
+
+    if order.completed_at:
+        timeline_events.append({'time': order.completed_at, 'status': 'Completed', 'icon': 'fa-flag-checkered', 'color': 'text-gray-400'})
+
+    if order.cancelled_at:
+        timeline_events.append({'time': order.cancelled_at, 'status': 'Cancelled', 'icon': 'fa-times-circle', 'color': 'text-red-400'})
+
+    # Sort timeline events by time
+    timeline_events = sorted([event for event in timeline_events if event['time']], key=lambda x: x['time'])
+
+    context = {
+        'order': order,
+        'order_items': order_items,
+        'payment': payment,
+        'time_elapsed': time_elapsed,
+        'timeline_events': timeline_events,
+        'active_section': 'orders'
+    }
+
+    return render(request, 'accounts/admin_view_order.html', context)
 
 
 @login_required
@@ -1415,8 +1493,8 @@ def profile(request):
 
         # Update staff profile if it exists
         if hasattr(user, 'staff_profile'):
-            if phone:
-                user.staff_profile.phone = phone
+            # Always update phone (even if empty)
+            user.staff_profile.phone = phone
 
             # Handle profile picture upload
             if profile_picture:
@@ -1426,13 +1504,23 @@ def profile(request):
 
         # Update customer profile if it exists
         if hasattr(user, 'customer_profile'):
-            if phone:
-                user.customer_profile.phone = phone
+            # Always update phone (even if empty)
+            user.customer_profile.phone = phone
 
-            # Handle profile picture upload
+            # Handle profile picture upload - always update if provided
             if profile_picture:
                 user.customer_profile.profile_picture = profile_picture
+            # Make sure profile_picture is not None or empty
+            elif not user.customer_profile.profile_picture:
+                # If no profile picture exists and none provided, check if we need to create one
+                from .models import CustomerProfile
+                # This ensures the profile picture field is never empty after editing
+                if CustomerProfile._meta.get_field('profile_picture').required:
+                    messages.warning(request, 'Profile picture is required. Please upload an image.')
+                    # Don't save changes if required field is missing
+                    return render(request, 'accounts/profile.html', {'active_section': 'profile'})
 
+            # Save the profile
             user.customer_profile.save()
         # If you have a UserProfile model with additional fields
         elif hasattr(user, 'profile'):
@@ -1748,6 +1836,98 @@ def view_customer_order(request, order_id):
     }
 
     return render(request, 'accounts/standalone_order_template.html', context)
+
+
+@login_required
+def order_details_api(request, order_id):
+    """API endpoint to get order details in JSON format"""
+    try:
+        # Check if the user is staff or the order belongs to the user
+        if request.user.is_staff:
+            order = get_object_or_404(Order, id=order_id)
+        else:
+            order = get_object_or_404(Order, id=order_id, user=request.user)
+
+        # Get order items
+        order_items = []
+        for item in order.order_items.all():
+            order_items.append({
+                'id': item.id,
+                'name': item.menu_item.name,
+                'quantity': item.quantity,
+                'price': float(item.price),
+                'subtotal': float(item.subtotal),
+                'special_instructions': item.special_instructions
+            })
+
+        # Get payment information
+        payment = Payment.objects.filter(order=order).first()
+        payment_info = None
+        if payment:
+            payment_info = {
+                'id': payment.id,
+                'amount': float(payment.amount),
+                'payment_method': payment.payment_method,
+                'status': payment.status,
+                'payment_date': payment.payment_date.isoformat() if payment.payment_date else None
+            }
+
+        # Prepare the response data
+        data = {
+            'id': order.id,
+            'user_name': order.user.get_full_name() or order.user.username,
+            'user_email': order.user.email,
+            'customer_name': order.customer_name,
+            'customer_phone': order.customer_phone,
+            'status': order.status,
+            'status_display': dict(Order.STATUS_CHOICES).get(order.status),
+            'order_type': order.order_type,
+            'payment_method': order.payment_method,
+            'payment_status': order.payment_status,
+            'total_amount': float(order.total_amount),
+            'tax_amount': float(order.tax_amount),
+            'delivery_fee': float(order.delivery_fee),
+            'discount_amount': float(order.discount_amount),
+            'grand_total': float(order.grand_total),
+            'delivery_address': order.delivery_address,
+            'contact_number': order.contact_number,
+            'table_number': order.table_number,
+            'special_instructions': order.special_instructions,
+            'created_at': order.created_at.isoformat() if order.created_at else None,
+            'updated_at': order.updated_at.isoformat() if order.updated_at else None,
+            'preparing_at': order.preparing_at.isoformat() if order.preparing_at else None,
+            'ready_at': order.ready_at.isoformat() if order.ready_at else None,
+            'completed_at': order.completed_at.isoformat() if order.completed_at else None,
+            'cancelled_at': order.cancelled_at.isoformat() if order.cancelled_at else None,
+            'order_items': order_items,
+            'payment': payment_info
+        }
+
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@permission_required('ecommerce.view_reservation', raise_exception=True)
+def view_reservation(request, reservation_id):
+    """View a single reservation with detailed information"""
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+
+    # Get reservation items if any
+    reservation_items = reservation.reservation_items.all().select_related('menu_item')
+
+    # Get reservation payments if any
+    payments = reservation.payments.all()
+
+    context = {
+        'reservation': reservation,
+        'reservation_items': reservation_items,
+        'payments': payments,
+        'active_section': 'reservations'
+    }
+
+    return render(request, 'accounts/view_reservation.html', context)
 
 
 @login_required
