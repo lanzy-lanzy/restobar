@@ -77,6 +77,12 @@
                                         <i class="fas fa-shield-alt text-blue-400 mr-2 mt-1"></i>
                                         <span>Our cashier will verify your payment before processing your order</span>
                                     </p>
+                                    {% if reservation_id %}
+                                    <p class="flex items-start text-blue-300 mt-2">
+                                        <i class="fas fa-info-circle text-blue-400 mr-2 mt-1"></i>
+                                        <span>Since this order is linked to your table reservation, it requires cashier verification before being finalized.</span>
+                                    </p>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -151,6 +157,22 @@
                         {% if order.order_type == 'DINE_IN' %}
                         <p class="text-gray-300 mt-3 bg-green-900/30 p-2 rounded"><i class="fas fa-utensils mr-2 text-green-400"></i> Your table reservation (Table {{ order.table_number }}) will be confirmed once payment is verified. Please arrive within 30 minutes of payment confirmation.</p>
                         {% endif %}
+
+                        {% if reservation_id or order.reservation %}
+                        <div class="mt-3 bg-food-gold/20 p-3 rounded border border-food-gold">
+                            <h5 class="font-semibold text-food-gold flex items-center mb-2">
+                                <i class="fas fa-calendar-check mr-2"></i> Reservation Order
+                            </h5>
+                            <p class="text-white">This order is linked to your table reservation. Your payment requires cashier verification before being finalized.</p>
+                        </div>
+                        {% elif order.order_type == 'DINE_IN' %}
+                        <div class="mt-3 bg-blue-900/30 p-3 rounded border border-blue-800">
+                            <h5 class="font-semibold text-blue-400 flex items-center mb-2">
+                                <i class="fas fa-utensils mr-2"></i> Dine-In Order
+                            </h5>
+                            <p class="text-white">You've selected to dine in at our restaurant. Your payment requires cashier verification before your table is reserved.</p>
+                        </div>
+                        {% endif %}
                     </div>
 
                     <form method="POST" action="{% url 'gcash_payment' order.id %}" enctype="multipart/form-data">
@@ -192,8 +214,13 @@
                             <a href="{% url 'view_cart' %}" class="text-gray-400 hover:text-white transition-colors duration-200">
                                 <i class="fas fa-arrow-left mr-1"></i> Cancel Payment
                             </a>
-                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-md transition-colors duration-200 text-lg">
-                                <i class="fas fa-check-circle mr-2"></i> Submit Payment Details & Place Order
+                            <button type="submit" class="{% if reservation_id or order.reservation %}bg-blue-600 hover:bg-blue-700{% else %}bg-green-600 hover:bg-green-700{% endif %} text-white font-bold py-3 px-8 rounded-md transition-colors duration-200 text-lg">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                {% if reservation_id or order.reservation %}
+                                Submit Payment for Cashier Verification
+                                {% else %}
+                                Submit Payment Details & Place Order
+                                {% endif %}
                             </button>
                         </div>
                     </form>

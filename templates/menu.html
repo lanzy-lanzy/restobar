@@ -24,14 +24,14 @@
 
         <!-- Menu Categories -->
         <div class="flex flex-wrap justify-center gap-4 mb-12">
-            <button hx-get="{% url 'filter_menu' %}"
+            <button hx-get="{% url 'filter_menu' %}{% if request.GET.reservation_id %}?reservation_id={{ request.GET.reservation_id }}{% endif %}"
                     hx-target="#menu-items-container"
                     hx-swap="innerHTML"
                     class="bg-gradient-to-r from-food-gold to-food-orange text-white font-bold py-2 px-6 rounded-full hover:from-food-red hover:to-food-gold transition duration-300 hover-scale shadow-lg">
                 All
             </button>
             {% for category in categories %}
-            <button hx-get="{% url 'filter_menu' %}?category={{ category.id }}"
+            <button hx-get="{% url 'filter_menu' %}?category={{ category.id }}{% if request.GET.reservation_id %}&reservation_id={{ request.GET.reservation_id }}{% endif %}"
                     hx-target="#menu-items-container"
                     hx-swap="innerHTML"
                     class="bg-transparent border-2 border-food-gold text-white font-bold py-2 px-6 rounded-full hover:bg-food-gold hover:text-food-black transition duration-300 hover-scale shadow-lg">
@@ -42,7 +42,7 @@
 
         <!-- Menu Items Grid Container -->
         <div id="menu-items-container">
-            {% include 'components/home/menu_items_grid.html' %}
+            {% include 'components/home/menu_items_grid.html' with reservation_id=request.GET.reservation_id %}
         </div>
 
         <!-- Cart Count Indicator -->

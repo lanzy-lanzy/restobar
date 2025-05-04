@@ -86,37 +86,19 @@
                         </div>
                         {% endif %}
 
-                        <div class="grid grid-cols-1 gap-6 mb-6"
-                             x-data="{ orderType: '{{ form.initial.order_type|default:"PICKUP" }}', tableNumber: '{{ form.initial.table_number|default:"" }}', numberOfGuests: 2 }"
-                             x-init="
-                                // Initialize order type buttons
-                                setTimeout(() => {
-                                    setOrderType(orderType);
+                        <!-- Add hidden input to track reservation_id if coming from a reservation -->
+                        <input type="hidden" name="reservation_id" id="reservation_id" value="{{ reservation_id|default:'' }}">
 
+                        <div class="grid grid-cols-1 gap-6 mb-6"
+                             x-data="{ orderType: 'DINE_IN', tableNumber: '{{ form.initial.table_number|default:"" }}', numberOfGuests: {{ form.initial.number_of_guests|default:2 }}, reservationId: '{{ reservation_id|default:"" }}' }"
+                             x-init="
+                                // Initialize with table selection
+                                setTimeout(() => {
                                     // If table number is set, select it
                                     if (tableNumber) {
                                         selectTable(tableNumber);
                                     }
-
-                                    // Show dine-in section if order type is DINE_IN
-                                    if (orderType === 'DINE_IN') {
-                                        document.getElementById('dine-in-section').style.display = 'block';
-                                    }
-                                }, 100);
-
-                                $watch('orderType', value => {
-                                    if (value === 'DINE_IN') {
-                                        document.getElementById('dine-in-section').style.display = 'block';
-                                    } else {
-                                        document.getElementById('dine-in-section').style.display = 'none';
-                                    }
-                                });
-                                $watch('tableNumber', value => {
-                                    document.getElementById('table_number').value = value;
-                                });
-                                $watch('numberOfGuests', value => {
-                                    document.getElementById('number_of_guests').value = value;
-                                });">
+                                }, 100);">
 
                             <!-- Hidden fields for user info -->
                             {{ form.first_name }}
@@ -128,37 +110,11 @@
                             <input type="hidden" name="table_number" id="table_number" value="">
                             <input type="hidden" name="number_of_guests" id="number_of_guests" value="2">
 
-                            <!-- Order Type Selection -->
-                            <div class="form-group">
-                                <label class="block text-gray-400 mb-2">Order Type</label>
-                                <div class="grid grid-cols-3 gap-3">
-                                    <button type="button"
-                                            class="order-type-button bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-lg flex flex-col items-center justify-center transition-colors duration-200"
-                                            data-type="PICKUP"
-                                            x-on:click="orderType = 'PICKUP'">
-                                        <i class="fas fa-shopping-bag text-xl mb-1"></i>
-                                        <span>Pickup</span>
-                                    </button>
-                                    <button type="button"
-                                            class="order-type-button bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-lg flex flex-col items-center justify-center transition-colors duration-200"
-                                            data-type="DELIVERY"
-                                            x-on:click="orderType = 'DELIVERY'">
-                                        <i class="fas fa-motorcycle text-xl mb-1"></i>
-                                        <span>Delivery</span>
-                                    </button>
-                                    <button type="button"
-                                            class="order-type-button bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-lg flex flex-col items-center justify-center transition-colors duration-200"
-                                            data-type="DINE_IN"
-                                            x-on:click="orderType = 'DINE_IN'">
-                                        <i class="fas fa-utensils text-xl mb-1"></i>
-                                        <span>Dine In</span>
-                                    </button>
-                                </div>
-                                <input type="hidden" name="order_type" id="order_type" value="PICKUP">
-                            </div>
+                            <!-- Hidden input for order type (always DINE_IN) -->
+                            <input type="hidden" name="order_type" id="order_type" value="DINE_IN">
 
-                            <!-- Dine-In Section (Hidden by default) -->
-                            <div id="dine-in-section" class="space-y-6" style="display: none;">
+                            <!-- Dine-In Section (Always visible) -->
+                            <div id="dine-in-section" class="space-y-6">
                                 <!-- Number of Guests -->
                                 <div class="form-group">
                                     <label class="block text-gray-400 mb-2">Number of Guests</label>
@@ -312,7 +268,13 @@
                             <!-- Submit Button -->
                             <div class="mt-8 space-y-4">
                                 <button type="submit" id="checkout-submit-button" class="w-full bg-food-gold hover:bg-food-gold-light text-gray-900 font-bold py-3 px-6 rounded-md transition-colors duration-200">
-                                    <i class="fas fa-credit-card mr-2"></i> <span id="submit-button-text">Proceed to Payment</span>
+                                    <i class="fas fa-credit-card mr-2"></i> <span id="submit-button-text">
+                                        {% if reservation_id %}
+                                        Confirm Order & Proceed to Payment
+                                        {% else %}
+                                        Proceed to Payment
+                                        {% endif %}
+                                    </span>
                                 </button>
 
                                 <div id="checkout-error-message" class="hidden bg-red-900/50 text-red-300 p-4 rounded-lg text-center">
@@ -371,6 +333,13 @@
     }
     // Function to select a table
     function selectTable(tableNumber) {
+        // Check if the table is disabled (occupied)
+        const tableBtn = document.querySelector(`.table-button[data-table="${tableNumber}"]`);
+        if (tableBtn && tableBtn.disabled && !tableBtn.classList.contains('bg-food-gold')) {
+            console.log(`Table ${tableNumber} is occupied and cannot be selected`);
+            return;
+        }
+
         // Set the table number in the hidden input
         const tableInput = document.getElementById('table_number');
         if (tableInput) {
@@ -387,7 +356,7 @@
                 }
             }
         } catch (e) {
-            // Silently handle errors
+            console.error('Error updating Alpine state:', e);
         }
 
         // Highlight the selected table button
@@ -437,70 +406,110 @@
                                 }
                             }
                         } catch (e) {
-                            // Silently handle errors
+                            console.error('Error updating Alpine state:', e);
                         }
                     }
+                }
+            }
+
+            // Check if this is a reservation
+            const reservationId = document.getElementById('reservation_id').value;
+            if (reservationId) {
+                // Update the text to indicate this is a reserved table
+                const selectedTableText = document.getElementById('selected-table-text');
+                if (selectedTableText) {
+                    selectedTableText.innerHTML = `You've selected your reserved Table <span id="selected-table-number">${tableNumber}</span>.`;
+                }
+
+                // Add a note about the reservation
+                const noteElement = document.createElement('p');
+                noteElement.className = 'text-sm text-food-gold mt-1';
+                noteElement.innerHTML = '<i class="fas fa-info-circle mr-1"></i> This table is reserved for your reservation.';
+
+                // Check if the note already exists
+                const existingNote = selectedTableInfo.querySelector('.text-food-gold');
+                if (!existingNote) {
+                    selectedTableInfo.appendChild(noteElement);
                 }
             }
         }
     }
 
-    // Function to set order type
-    function setOrderType(type) {
-        // Set the order type in the hidden input
-        const orderTypeInput = document.getElementById('order_type');
-        if (orderTypeInput) {
-            orderTypeInput.value = type;
-        }
+    // Function to initialize the checkout page
+    function initializeCheckout() {
+        // Check if we have a reservation ID
+        const reservationId = document.getElementById('reservation_id').value;
 
-        // Update Alpine.js state if available
-        try {
-            const alpineEl = document.querySelector('[x-data]');
-            if (alpineEl && window.Alpine) {
-                const alpineComponent = Alpine.$data(alpineEl);
-                if (alpineComponent) {
-                    alpineComponent.orderType = type;
-                }
-            }
-        } catch (e) {
-            // Silently handle errors
-        }
-
-        // Show/hide dine-in section
+        // Add a note about table selection if not from reservation
         const dineInSection = document.getElementById('dine-in-section');
-        if (dineInSection) {
-            dineInSection.style.display = type === 'DINE_IN' ? 'block' : 'none';
+        if (dineInSection && !reservationId) {
+            // Check if the note already exists
+            const existingNote = document.getElementById('dine-in-note');
+            if (!existingNote) {
+                const noteElement = document.createElement('div');
+                noteElement.id = 'dine-in-note';
+                noteElement.className = 'bg-blue-900/30 border border-blue-800 rounded-lg p-3 mb-4';
+                noteElement.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-blue-400 mr-2"></i>
+                        <p class="text-white text-sm">Please select a table for your order. Your order will require cashier verification after payment.</p>
+                    </div>
+                `;
+                dineInSection.insertBefore(noteElement, dineInSection.firstChild);
+            }
         }
 
-        // Highlight the selected order type button
-        document.querySelectorAll('.order-type-button').forEach(btn => {
-            if (btn.dataset.type === type) {
-                btn.classList.add('bg-food-gold');
-                btn.classList.add('text-gray-900');
-                btn.classList.remove('bg-gray-700');
-                btn.classList.remove('text-white');
-            } else {
-                btn.classList.remove('bg-food-gold');
-                btn.classList.remove('text-gray-900');
-                btn.classList.add('bg-gray-700');
-                btn.classList.add('text-white');
-            }
-        });
-
-        // Update button text based on order type
+        // Update button text based on reservation status
         const submitButton = document.querySelector('#checkout-submit-button');
         const buttonText = document.querySelector('#submit-button-text');
         const buttonIcon = submitButton ? submitButton.querySelector('i') : null;
+
         if (buttonText) {
-            if (type === 'DINE_IN') {
-                buttonText.textContent = 'Reserve Table & Proceed to Payment';
-                if (buttonIcon) {
-                    buttonIcon.className = 'fas fa-utensils mr-2';
-                }
+            if (reservationId) {
+                // Coming from a reservation
+                buttonText.textContent = 'Confirm Order & Proceed to Payment';
+                console.log('Setting button text for reservation order');
             } else {
-                buttonText.textContent = 'Proceed to Payment';
-                if (buttonIcon) {
-                    buttonIcon.className = 'fas fa-credit-card mr-2';
+                // New dine-in order
+                buttonText.textContent = 'Reserve Table & Proceed to Payment';
+                console.log('Setting button text for new dine-in order');
+            }
+            if (buttonIcon) {
+                buttonIcon.className = 'fas fa-utensils mr-2';
+            }
+
+            // Update button style for dine-in
+            if (submitButton) {
+                submitButton.classList.remove('bg-food-gold');
+                submitButton.classList.add('bg-green-600', 'hover:bg-green-700');
+            }
+        }
+
+        // If this is a reservation, add a note about the reservation
+        if (reservationId) {
+            // Add a note about the reservation at the top of the form
+            const formElement = document.getElementById('checkout-form');
+            if (formElement) {
+                // Check if the note already exists
+                const existingNote = document.getElementById('reservation-note');
+                if (!existingNote) {
+                    const noteElement = document.createElement('div');
+                    noteElement.id = 'reservation-note';
+                    noteElement.className = 'bg-food-gold/20 p-4 rounded-lg border border-food-gold mb-6';
+                    noteElement.innerHTML = `
+                        <h4 class="font-medium text-food-gold mb-2 flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i> Reservation Order
+                        </h4>
+                        <p class="text-white">This order is linked to your table reservation.</p>
+                    `;
+
+                    // Insert at the beginning of the form, after the CSRF token
+                    const firstChild = formElement.querySelector('input[name="csrfmiddlewaretoken"]');
+                    if (firstChild) {
+                        formElement.insertBefore(noteElement, firstChild.nextSibling);
+                    } else {
+                        formElement.insertBefore(noteElement, formElement.firstChild);
+                    }
                 }
             }
         }
@@ -510,8 +519,108 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM loaded, initializing checkout page');
 
-        // Set default order type
-        setOrderType('PICKUP');
+        // Initialize the checkout page
+        initializeCheckout();
+
+        // Check if we have a reservation ID
+        const reservationId = document.getElementById('reservation_id').value;
+        console.log('Reservation ID:', reservationId);
+
+        if (reservationId) {
+            // Add a reservation notice at the top of the page
+            const checkoutContainer = document.querySelector('.container');
+            if (checkoutContainer) {
+                const reservationNotice = document.createElement('div');
+                reservationNotice.className = 'bg-food-gold/20 border border-food-gold rounded-lg p-4 mb-6 text-center';
+                reservationNotice.innerHTML = `
+                    <div class="flex items-center justify-center mb-2">
+                        <i class="fas fa-calendar-check text-food-gold text-xl mr-2"></i>
+                        <h3 class="text-food-gold font-bold text-lg">Reservation Order</h3>
+                    </div>
+                    <p class="text-white">You are adding menu items to your confirmed reservation. Your order will require cashier verification after payment.</p>
+                `;
+
+                // Insert at the beginning of the container, before the first child
+                checkoutContainer.insertBefore(reservationNotice, checkoutContainer.firstChild);
+            }
+
+            // Make a request to get the reservation details
+            fetch(`/api/reservations/${reservationId}/`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Reservation data:', data);
+                    if (data.table_number) {
+                        console.log('Setting table number from reservation:', data.table_number);
+
+                        // Set the table number in the hidden input
+                        const tableInput = document.getElementById('table_number');
+                        if (tableInput) {
+                            tableInput.value = data.table_number;
+                        }
+
+                        // Highlight the selected table
+                        selectTable(data.table_number);
+
+                        // Set number of guests from reservation
+                        if (data.party_size) {
+                            const guestsInput = document.getElementById('number_of_guests');
+                            if (guestsInput) {
+                                guestsInput.value = data.party_size;
+
+                                // Update Alpine.js state if available
+                                try {
+                                    const alpineEl = document.querySelector('[x-data]');
+                                    if (alpineEl && window.Alpine) {
+                                        const alpineComponent = Alpine.$data(alpineEl);
+                                        if (alpineComponent) {
+                                            alpineComponent.numberOfGuests = data.party_size;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error('Error updating Alpine state:', e);
+                                }
+                            }
+                        }
+
+                        // Disable other tables
+                        document.querySelectorAll('.table-button').forEach(btn => {
+                            if (btn.dataset.table !== data.table_number) {
+                                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                                btn.disabled = true;
+                            }
+                        });
+
+                        // Add a table reservation notice
+                        const tableSection = document.getElementById('dine-in-section');
+                        if (tableSection) {
+                            const tableNotice = document.createElement('div');
+                            tableNotice.className = 'bg-blue-900/30 border border-blue-800 rounded-lg p-3 mb-4 mt-2';
+                            tableNotice.innerHTML = `
+                                <div class="flex items-center">
+                                    <i class="fas fa-info-circle text-blue-400 mr-2"></i>
+                                    <p class="text-white text-sm">Table ${data.table_number} is reserved for your party of ${data.party_size}. This table has been automatically selected.</p>
+                                </div>
+                            `;
+                            tableSection.appendChild(tableNotice);
+                        }
+                    } else {
+                        // Fallback to table 1 if we can't find the table number
+                        console.log('No table number found in reservation, defaulting to table 1');
+                        selectTable('1');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching reservation details:', error);
+                    // Fallback to table 1 if we can't get reservation details
+                    console.log('Error getting reservation details, defaulting to table 1');
+                    selectTable('1');
+                });
+        }
 
         // Add click handlers to all table buttons
         document.querySelectorAll('.table-button').forEach(btn => {
@@ -525,6 +634,17 @@
         // Add click handlers to order type buttons
         document.querySelectorAll('.order-type-button').forEach(btn => {
             btn.addEventListener('click', function() {
+                // If coming from reservation, don't allow changing from DINE_IN
+                if (reservationId && this.dataset.type !== 'DINE_IN') {
+                    alert('This order is linked to a reservation and must be for dine-in.');
+                    return;
+                }
+
+                // If this button is disabled, don't do anything
+                if (this.disabled) {
+                    return;
+                }
+
                 setOrderType(this.dataset.type);
             });
         });
@@ -537,16 +657,14 @@
                 e.preventDefault();
 
                 // Get form values
-                const orderType = document.getElementById('order_type').value;
                 const tableNumber = document.getElementById('table_number').value;
+                const reservationId = document.getElementById('reservation_id').value;
 
-                // For dine-in orders, ensure a table is selected
-                if (orderType === 'DINE_IN') {
-                    if (!tableNumber) {
-                        // If no table is selected, use table 1 by default
-                        document.getElementById('table_number').value = '1';
-                        alert('No table was selected. Table 1 has been automatically selected for you.');
-                    }
+                // Ensure a table is selected
+                if (!tableNumber) {
+                    // If no table is selected, use table 1 by default
+                    document.getElementById('table_number').value = '1';
+                    alert('No table was selected. Table 1 has been automatically selected for you.');
                 }
 
                 // Disable the submit button to prevent double submission
@@ -562,6 +680,12 @@
                         buttonIcon.className = 'fas fa-spinner fa-spin mr-2';
                     }
                 }
+
+                // Log the form data
+                console.log('Submitting checkout form:');
+                console.log('Order Type: DINE_IN');
+                console.log('Table Number:', tableNumber);
+                console.log('Reservation ID:', reservationId);
 
                 // Submit the form
                 this.submit();

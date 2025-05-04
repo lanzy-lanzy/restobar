@@ -95,3 +95,23 @@ def has_pending_payment(reservation):
 def filter_by_status(orders, status):
     """Filter a queryset of orders by status"""
     return [order for order in orders if order.status == status]
+
+@register.filter
+def percentage(value, total):
+    """Calculate percentage of value relative to total"""
+    try:
+        if float(total) == 0:
+            return 0
+        return (float(value) / float(total)) * 100
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0
+
+@register.filter
+def divide(value, divisor):
+    """Divide value by divisor"""
+    try:
+        if float(divisor) == 0:
+            return 0
+        return float(value) / float(divisor)
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0

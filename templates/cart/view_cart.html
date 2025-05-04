@@ -110,7 +110,7 @@
                                 <span class="text-food-gold font-bold text-xl">{{ grand_total|currency }}</span>
                             </div>
                         </div>
-                        <a href="{% url 'checkout' %}" class="w-full bg-food-gold hover:bg-food-gold-light text-gray-900 font-bold py-4 px-6 rounded-md transition-colors duration-200 flex items-center justify-center text-lg shadow-lg transform hover:scale-105">
+                        <a href="{% url 'checkout' %}{% if reservation_id %}?reservation_id={{ reservation_id }}{% endif %}" class="w-full bg-food-gold hover:bg-food-gold-light text-gray-900 font-bold py-4 px-6 rounded-md transition-colors duration-200 flex items-center justify-center text-lg shadow-lg transform hover:scale-105">
                             <i class="fas fa-credit-card mr-2"></i> Pay with GCash
                         </a>
                     </div>

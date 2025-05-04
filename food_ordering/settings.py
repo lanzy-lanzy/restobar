@@ -66,6 +66,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'ecommerce.context_processors.cart_processor',
                 'ecommerce.context_processors.reservation_processor',
+                'ecommerce.context_processors.cashier_notification_processor',
                 'ecommerce.context_processors.customer_notification_processor',
             ],
         },

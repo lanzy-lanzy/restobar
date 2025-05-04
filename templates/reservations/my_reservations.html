@@ -12,9 +12,6 @@
             <h1 class="text-2xl font-bold">My Reservations</h1>
             <p class="text-gray-400">Manage your table reservations</p>
         </div>
-        <a href="#" id="open-reservation-modal" class="btn-primary px-4 py-2 rounded-lg">
-            <i class="fas fa-plus mr-2"></i> New Reservation
-        </a>
     </div>
 
     <!-- Filters -->
@@ -50,6 +47,42 @@
             {{ status_name }}
         </a>
         {% endfor %}
+    </div>
+
+    <!-- Reservation Information -->
+    <div class="card p-6 shadow-lg border border-gray-800 mb-6">
+        <h3 class="text-xl font-bold text-white mb-4">Reservation Information</h3>
+        <div class="space-y-4">
+            <div class="p-4 bg-blue-900/30 border border-blue-800 rounded-lg">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-400 mt-1 mr-3"></i>
+                    <div>
+                        <h4 class="text-white font-medium mb-1">Reservation Policy</h4>
+                        <p class="text-gray-300 text-sm">Reservations can only be made for today or future dates. Your table will be automatically marked as occupied after your reservation is confirmed.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-yellow-900/30 border border-yellow-800 rounded-lg">
+                <div class="flex items-start">
+                    <i class="fas fa-clock text-yellow-400 mt-1 mr-3"></i>
+                    <div>
+                        <h4 class="text-white font-medium mb-1">Time Limit</h4>
+                        <p class="text-gray-300 text-sm">You must place your order within 3 hours of your reservation time, or your table will be released for other customers. Use the "Order Now" button to place your order when you arrive.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-green-900/30 border border-green-800 rounded-lg">
+                <div class="flex items-start">
+                    <i class="fas fa-utensils text-green-400 mt-1 mr-3"></i>
+                    <div>
+                        <h4 class="text-white font-medium mb-1">Pre-ordering</h4>
+                        <p class="text-gray-300 text-sm">You can pre-order menu items when making a reservation. Pre-ordered items require payment to secure your reservation and will be prepared 20 minutes before your arrival time if you select that option.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Reservations List -->
@@ -138,7 +171,7 @@
                             {% elif reservation.status == 'CONFIRMED' and not reservation.has_menu_items %}
                                 <div class="flex flex-col space-y-2">
                                     <span class="text-green-300 text-xs">Ready for dining</span>
-                                    <a href="{% url 'menu' %}" class="bg-food-gold hover:bg-food-gold-light text-gray-900 px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-center pulse-animation">
+                                    <a href="{% url 'menu' %}?reservation_id={{ reservation.id }}" class="bg-food-gold hover:bg-food-gold-light text-gray-900 px-3 py-2 rounded-lg text-sm font-bold flex items-center justify-center pulse-animation">
                                         <i class="fas fa-utensils mr-1"></i> Order Now
                                     </a>
                                 </div>
@@ -168,32 +201,6 @@
         </div>
         {% endif %}
     </div>
-
-    <!-- Timeline/Status Tracker -->
-    <div class="flex items-center justify-center mb-6">
-        <div class="flex items-center space-x-4">
-            <div class="flex flex-col items-center">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center {% if reservation.status != 'PENDING' %}bg-green-500{% else %}bg-yellow-500{% endif %} text-white font-bold">1</div>
-                <span class="text-xs text-gray-300 mt-1">Requested</span>
-            </div>
-            <div class="w-8 border-t-2 {% if reservation.status != 'PENDING' %}border-green-500{% else %}border-yellow-500{% endif %}"></div>
-            <div class="flex flex-col items-center">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center {% if reservation.status == 'CONFIRMED' or reservation.status == 'COMPLETED' %}bg-green-500{% else %}bg-gray-500{% endif %} text-white font-bold">2</div>
-                <span class="text-xs text-gray-300 mt-1">Confirmed</span>
-            </div>
-            <div class="w-8 border-t-2 {% if reservation.payment_status == 'PAID' %}border-green-500{% else %}border-gray-500{% endif %}"></div>
-            <div class="flex flex-col items-center">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center {% if reservation.payment_status == 'PAID' %}bg-green-500{% else %}bg-gray-500{% endif %} text-white font-bold">3</div>
-                <span class="text-xs text-gray-300 mt-1">Paid</span>
-            </div>
-            <div class="w-8 border-t-2 {% if reservation.status == 'COMPLETED' %}border-green-500{% else %}border-gray-500{% endif %}"></div>
-            <div class="flex flex-col items-center">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center {% if reservation.status == 'COMPLETED' %}bg-green-500{% else %}bg-gray-500{% endif %} text-white font-bold">4</div>
-                <span class="text-xs text-gray-300 mt-1">Completed</span>
-            </div>
-        </div>
-    </div>
-
 </div>
 
 <!-- Reservation Details Modal -->
@@ -217,50 +224,7 @@
     </div>
 </div>
 
-<!-- Reservation Modal -->
-<div id="reservation-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
-    <div class="bg-gray-800 rounded-lg shadow-lg max-w-4xl w-full mx-4 border border-gray-700 overflow-y-auto max-h-[90vh]">
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-white">Make a Reservation</h3>
-                <button id="close-reservation-modal" class="text-gray-400 hover:text-white">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
 
-            <div id="reservation-form-container">
-                {% include 'reservations/reservation_form_modal.html' %}
-            </div>
-
-            <div id="reservation-success" class="hidden text-center py-8">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-900/50 flex items-center justify-center text-green-500 text-2xl">
-                    <i class="fas fa-check"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-2">Reservation Submitted!</h3>
-                <p class="text-gray-400 mb-6">Your reservation has been submitted successfully. We will confirm it shortly.</p>
-                <div class="flex justify-center space-x-4">
-                    <button id="view-reservations" class="bg-food-gold hover:bg-food-gold-light text-black font-bold py-2 px-4 rounded-lg transition duration-300">
-                        View Reservations
-                    </button>
-                    <button id="make-another-reservation" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                        Make Another Reservation
-                    </button>
-                </div>
-            </div>
-
-            <div id="reservation-error" class="hidden text-center py-8">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-900/50 flex items-center justify-center text-red-500 text-2xl">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-2">Oops! Something went wrong</h3>
-                <p id="error-message" class="text-gray-400 mb-6">There was an error submitting your reservation. Please try again.</p>
-                <button id="try-again" class="bg-food-gold hover:bg-food-gold-light text-black font-bold py-2 px-4 rounded-lg transition duration-300">
-                    Try Again
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 {% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
@@ -290,237 +254,95 @@
         };
     }
 
+    // Function to check reservation time limits
+    function checkReservationTimeLimits() {
+        const confirmedReservations = document.querySelectorAll('tr[data-reservation-id]');
+        const now = new Date();
+
+        confirmedReservations.forEach(row => {
+            // Only process confirmed reservations
+            const statusCell = row.cells[3];
+            const statusText = statusCell.querySelector('span').textContent.trim();
+
+            if (statusText === 'Confirmed') {
+                const reservationId = row.getAttribute('data-reservation-id');
+                const dateTimeText = row.cells[0].textContent; // Format: "Jan 1, 2023 at 14:30"
+
+                // Parse the date and time
+                const [datePart, timePart] = dateTimeText.split(' at ');
+                const dateObj = new Date(datePart);
+                const [hours, minutes] = timePart.split(':').map(Number);
+
+                dateObj.setHours(hours, minutes, 0, 0);
+
+                // Calculate time difference in hours
+                const diffMs = now - dateObj;
+                const diffHours = diffMs / (1000 * 60 * 60);
+
+                // If more than 3 hours have passed since reservation time
+                if (diffHours > 3) {
+                    // Add warning to the row
+                    if (!row.classList.contains('bg-red-900/20')) {
+                        row.classList.add('bg-red-900/20');
+
+                        // Add warning message to the actions cell
+                        const actionsCell = row.cells[5];
+                        const orderNowBtn = actionsCell.querySelector('a[href*="menu"]');
+
+                        if (orderNowBtn) {
+                            const warningDiv = document.createElement('div');
+                            warningDiv.className = 'mt-2 p-2 bg-red-900/50 border border-red-800 rounded-lg';
+                            warningDiv.innerHTML = `
+                                <div class="flex items-start">
+                                    <i class="fas fa-exclamation-triangle text-red-400 mt-1 mr-2"></i>
+                                    <p class="text-red-300 text-xs">Your reservation time limit is expiring. Please place your order soon or your table may be released.</p>
+                                </div>
+                            `;
+                            actionsCell.appendChild(warningDiv);
+
+                            // Make the Order Now button pulse more urgently
+                            orderNowBtn.classList.add('urgent-pulse-animation');
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Add CSS for urgent pulse animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes urgent-pulse-border {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+            }
+        }
+
+        .urgent-pulse-animation {
+            animation: urgent-pulse-border 1s infinite;
+            background-color: #ef4444 !important;
+        }
+    `;
+    document.head.appendChild(style);
+
     document.addEventListener('DOMContentLoaded', function() {
-        // Reservation Modal
-        const reservationModal = document.getElementById('reservation-modal');
-        const openReservationModalBtn = document.getElementById('open-reservation-modal');
-        const closeReservationModalBtn = document.getElementById('close-reservation-modal');
-        const reservationForm = document.getElementById('reservation-form');
-        const reservationFormContainer = document.getElementById('reservation-form-container');
-        const reservationSuccess = document.getElementById('reservation-success');
-        const reservationError = document.getElementById('reservation-error');
-        const makeAnotherReservationBtn = document.getElementById('make-another-reservation');
-        const viewReservationsBtn = document.getElementById('view-reservations');
-        const tryAgainBtn = document.getElementById('try-again');
-        const errorMessage = document.getElementById('error-message');
+        // Check reservation time limits on page load
+        checkReservationTimeLimits();
+
+        // Check every minute
+        setInterval(checkReservationTimeLimits, 60000);
 
         // Reservation Details Modal
         const reservationDetailsModal = document.getElementById('reservation-details-modal');
         const closeDetailsModalBtn = document.getElementById('close-details-modal');
         const reservationDetailsContent = document.getElementById('reservation-details-content');
         const viewReservationBtns = document.querySelectorAll('.view-reservation-btn');
-
-        // Set minimum date to today
-        const dateInput = document.getElementById('id_date');
-        if (dateInput) {
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.min = today;
-            dateInput.value = today;
-        }
-
-        // Set a default time that's at least 30 minutes in the future
-        const timeInput = document.getElementById('id_time');
-        if (timeInput) {
-            const now = new Date();
-            const minTime = new Date(now.getTime() + 30 * 60000); // current time + 30 minutes
-
-            // Round up to nearest half hour
-            const minutes = minTime.getMinutes();
-            if (minutes % 30 !== 0) {
-                minTime.setMinutes(Math.ceil(minutes / 30) * 30);
-            }
-
-            // Format as HH:MM
-            const hours = minTime.getHours().toString().padStart(2, '0');
-            const mins = minTime.getMinutes().toString().padStart(2, '0');
-            timeInput.value = `${hours}:${mins}`;
-        }
-
-        // Open reservation modal
-        openReservationModalBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            reservationModal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Prevent scrolling
-        });
-
-        // Close reservation modal
-        closeReservationModalBtn.addEventListener('click', function() {
-            reservationModal.classList.add('hidden');
-            document.body.style.overflow = ''; // Enable scrolling
-        });
-
-        // Close modal when clicking outside
-        reservationModal.addEventListener('click', function(e) {
-            if (e.target === reservationModal) {
-                reservationModal.classList.add('hidden');
-                document.body.style.overflow = ''; // Enable scrolling
-            }
-        });
-
-        // View reservations (refresh page)
-        if (viewReservationsBtn) {
-            viewReservationsBtn.addEventListener('click', function() {
-                window.location.reload();
-            });
-        }
-
-        // Make another reservation
-        if (makeAnotherReservationBtn) {
-            makeAnotherReservationBtn.addEventListener('click', function() {
-                reservationSuccess.classList.add('hidden');
-                reservationFormContainer.classList.remove('hidden');
-                if (reservationForm) {
-                    reservationForm.reset();
-                    if (dateInput) {
-                        dateInput.value = today;
-                    }
-                }
-            });
-        }
-
-        // Try again after error
-        if (tryAgainBtn) {
-            tryAgainBtn.addEventListener('click', function() {
-                reservationError.classList.add('hidden');
-                reservationFormContainer.classList.remove('hidden');
-
-                // Update the time field to ensure it's valid
-                const timeInput = document.getElementById('id_time');
-                if (timeInput) {
-                    const now = new Date();
-                    const minTime = new Date(now.getTime() + 30 * 60000); // current time + 30 minutes
-
-                    // Round up to nearest half hour
-                    const minutes = minTime.getMinutes();
-                    if (minutes % 30 !== 0) {
-                        minTime.setMinutes(Math.ceil(minutes / 30) * 30);
-                    }
-
-                    // Format as HH:MM
-                    const hours = minTime.getHours().toString().padStart(2, '0');
-                    const mins = minTime.getMinutes().toString().padStart(2, '0');
-                    timeInput.value = `${hours}:${mins}`;
-                }
-            });
-        }
-
-        // Handle form submission
-        if (reservationForm) {
-            reservationForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                // Validate the form
-                const tableInput = document.getElementById('table_number');
-                if (!tableInput || !tableInput.value) {
-                    alert('Please select a table for your reservation.');
-                    return;
-                }
-
-                // Set a default time that's at least 30 minutes in the future
-                const timeInput = document.getElementById('id_time');
-                if (timeInput) {
-                    // Check if date is today and time is at least 30 minutes in the future
-                    const dateInput = document.getElementById('id_date');
-                    const today = new Date().toISOString().split('T')[0];
-                    if (dateInput && dateInput.value === today) {
-                        const now = new Date();
-                        const selectedTime = new Date(today + 'T' + timeInput.value);
-                        const minTime = new Date(now.getTime() + 30 * 60000); // current time + 30 minutes
-
-                        if (selectedTime < minTime) {
-                            // Update the time to be valid
-                            const validTime = new Date(minTime.getTime());
-                            // Round up to nearest half hour
-                            const minutes = validTime.getMinutes();
-                            if (minutes % 30 !== 0) {
-                                validTime.setMinutes(Math.ceil(minutes / 30) * 30);
-                            }
-
-                            // Format as HH:MM
-                            const hours = validTime.getHours().toString().padStart(2, '0');
-                            const mins = validTime.getMinutes().toString().padStart(2, '0');
-                            timeInput.value = `${hours}:${mins}`;
-
-                            alert(`The time has been adjusted to ${hours}:${mins} to ensure it's at least 30 minutes in the future.`);
-                        }
-                    }
-                }
-
-                // Show loading state
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalBtnText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
-
-                // Get form data
-                const formData = new FormData(this);
-
-                // Add AJAX header
-                const headers = new Headers();
-                headers.append('X-Requested-With', 'XMLHttpRequest');
-
-                // Submit the form via AJAX
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: headers
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Reset button state
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnText;
-
-                    if (data.success) {
-                        // Always redirect to payment page
-                        if (data.redirect_url) {
-                            console.log('Redirecting to:', data.redirect_url);
-                            window.location.href = data.redirect_url;
-                        } else if (data.reservation_id) {
-                            // Construct the URL if redirect_url is not provided but reservation_id is
-                            const paymentUrl = `/reservations/${data.reservation_id}/payment/`;
-                            console.log('Redirecting to constructed URL:', paymentUrl);
-                            window.location.href = paymentUrl;
-                        } else {
-                            // Fallback to success message if no redirect information is available
-                            console.log('No redirect information available, showing success message');
-                            reservationFormContainer.classList.add('hidden');
-                            reservationSuccess.classList.remove('hidden');
-                        }
-                    } else {
-                        // Show error message
-                        const errorText = document.getElementById('error-message');
-                        if (errorText) {
-                            if (data.errors) {
-                                let errorMsg = '';
-                                for (const field in data.errors) {
-                                    errorMsg += data.errors[field].join(' ') + ' ';
-                                }
-                                errorText.textContent = errorMsg || 'Please correct the errors below.';
-                            } else {
-                                errorText.textContent = data.message || 'There was an error submitting your reservation.';
-                            }
-                        }
-                        reservationFormContainer.classList.add('hidden');
-                        reservationError.classList.remove('hidden');
-                    }
-                })
-                .catch(error => {
-                    // Reset button state
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnText;
-
-                    // Show error message
-                    const errorText = document.getElementById('error-message');
-                    if (errorText) {
-                        errorText.textContent = 'There was an error submitting your reservation. Please try again.';
-                    }
-                    reservationFormContainer.classList.add('hidden');
-                    reservationError.classList.remove('hidden');
-                    console.error('Error:', error);
-                });
-            });
-        }
 
         // Reservation details modal functions
         function openReservationDetailsModal(reservationId) {

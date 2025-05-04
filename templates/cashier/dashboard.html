@@ -61,7 +61,7 @@
     <div class="card p-6">
         <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
 
-        <!-- Two main process flows -->
+        <!-- Main process flows -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <!-- Walk-in Order Process -->
             <div class="bg-gray-800 p-5 rounded-lg border-l-4 border-food-gold">
@@ -101,10 +101,10 @@
         </div>
 
         <!-- Additional Actions -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <a href="{% url 'pending_payments' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-lg flex items-center justify-center">
                 <i class="fas fa-money-bill-wave mr-2 text-xl"></i>
-                <span class="font-medium">Pending GCash Payments</span>
+                <span class="font-medium">Pending Payments</span>
             </a>
 
             <a href="{% url 'preparation_tracker' %}" class="bg-gray-700 hover:bg-gray-600 text-white p-4 rounded-lg flex items-center justify-center">
@@ -115,6 +115,11 @@
             <a href="{% url 'menu' %}" class="bg-gray-700 hover:bg-gray-600 text-white p-4 rounded-lg flex items-center justify-center">
                 <i class="fas fa-utensils mr-2 text-xl"></i>
                 <span class="font-medium">View Menu</span>
+            </a>
+
+            <a href="{% url 'cashier_profile_edit' %}" class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg flex items-center justify-center">
+                <i class="fas fa-user-cog mr-2 text-xl"></i>
+                <span class="font-medium">My Profile</span>
             </a>
         </div>
     </div>

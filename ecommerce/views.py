@@ -78,6 +78,7 @@ def home(request):
 def filter_menu(request):
     """Filter menu items by category"""
     category_id = request.GET.get('category')
+    reservation_id = request.GET.get('reservation_id')
 
     # Get all available menu items
     menu_items = MenuItem.objects.filter(is_available=True)
@@ -88,6 +89,7 @@ def filter_menu(request):
 
     context = {
         'menu_items': menu_items,
+        'reservation_id': reservation_id,
     }
 
     return render(request, 'components/home/menu_items_grid.html', context)
@@ -97,9 +99,20 @@ def menu(request):
     categories = Category.objects.filter(is_active=True)
     menu_items = MenuItem.objects.filter(is_available=True)
 
+    # Get reservation_id from URL or session
+    reservation_id = request.GET.get('reservation_id')
+    if reservation_id:
+        # Store in session for the entire ordering flow
+        request.session['reservation_id'] = reservation_id
+        request.session.modified = True
+    else:
+        # Check if we have it in session already
+        reservation_id = request.session.get('reservation_id')
+
     context = {
         'categories': categories,
         'menu_items': menu_items,
+        'reservation_id': reservation_id,
     }
 
     return render(request, 'menu.html', context)
@@ -108,6 +121,12 @@ def menu(request):
 def add_to_cart(request, item_id):
     """Add an item to the cart"""
     menu_item = get_object_or_404(MenuItem, id=item_id, is_available=True)
+
+    # Check if coming from a reservation and store reservation_id in session
+    reservation_id = request.GET.get('reservation_id')
+    if reservation_id:
+        request.session['reservation_id'] = reservation_id
+        request.session.modified = True
 
     # For simplicity, we'll use session-based cart for non-logged in users
     if request.user.is_authenticated:
@@ -200,16 +219,25 @@ def view_cart(request):
     tax = total * Decimal('0.1')
     grand_total = total + tax
 
+    # Get reservation_id from session if it exists
+    reservation_id = request.session.get('reservation_id', '')
+
     return render(request, 'cart/view_cart.html', {
         'cart_items': cart_items,
         'total': total,
         'tax': tax,
-        'grand_total': grand_total
+        'grand_total': grand_total,
+        'reservation_id': reservation_id
     })
 
 
-def get_occupied_tables():
-    """Get a list of currently occupied tables"""
+def get_occupied_tables(exclude_reservation_id=None, user=None):
+    """Get a list of currently occupied tables
+
+    Args:
+        exclude_reservation_id: Optional reservation ID to exclude from occupied tables
+        user: Optional user to exclude their confirmed reservations
+    """
     # Get all active dine-in orders (orders that are not completed or cancelled)
     active_orders = Order.objects.filter(
         order_type='DINE_IN',
@@ -218,6 +246,15 @@ def get_occupied_tables():
 
     # Extract table numbers from active orders
     occupied_tables = [order.table_number for order in active_orders if order.table_number]
+
+    # If a reservation ID is provided, exclude its table from occupied tables
+    if exclude_reservation_id and user:
+        try:
+            reservation = Reservation.objects.get(id=exclude_reservation_id, user=user, status='CONFIRMED')
+            if reservation.table_number in occupied_tables:
+                occupied_tables.remove(reservation.table_number)
+        except Reservation.DoesNotExist:
+            pass
 
     return occupied_tables
 
@@ -241,12 +278,53 @@ def checkout(request):
         messages.error(request, 'Your cart is empty. Please add items before checkout.')
         return redirect('view_cart')
 
-    # Get occupied tables for dine-in orders
-    occupied_tables = get_occupied_tables()
+    # Check if coming from a reservation - first check URL, then session
+    reservation_id = request.GET.get('reservation_id') or request.session.get('reservation_id')
+    reservation = None
+
+    if reservation_id:
+        try:
+            reservation = Reservation.objects.get(id=reservation_id, user=request.user, status='CONFIRMED')
+
+            # Make sure the reservation is confirmed
+            if reservation.status != 'CONFIRMED':
+                messages.warning(request, 'Your reservation must be confirmed before you can place an order. Please wait for manager approval.')
+                return redirect('my_reservations')
+
+            # Pre-fill form with reservation data
+            initial_data = {
+                'order_type': 'DINE_IN',
+                'table_number': reservation.table_number,
+                'number_of_guests': reservation.party_size
+            }
+
+            # Get occupied tables, excluding the user's reserved table
+            occupied_tables = get_occupied_tables(exclude_reservation_id=reservation_id, user=request.user)
+
+            # Store reservation_id in session for later use
+            request.session['reservation_id'] = reservation_id
+            request.session.modified = True
+
+            # Log that we're processing an order for a reservation
+            print(f"Processing checkout for reservation {reservation_id}, table {reservation.table_number}")
+        except Reservation.DoesNotExist:
+            reservation = None
+            initial_data = {}
+            # Get all occupied tables
+            occupied_tables = get_occupied_tables()
+
+            # Clear reservation_id from session if it's invalid
+            if 'reservation_id' in request.session:
+                del request.session['reservation_id']
+                request.session.modified = True
+    else:
+        initial_data = {}
+        # Get all occupied tables
+        occupied_tables = get_occupied_tables()
 
     if request.method == 'POST':
         # Get form data
-        order_type = request.POST.get('order_type', 'PICKUP')
+        order_type = 'DINE_IN'  # Always set to DINE_IN
         table_number = request.POST.get('table_number', '')
         number_of_guests = request.POST.get('number_of_guests', 2)
         special_instructions = request.POST.get('special_instructions', '')
@@ -289,9 +367,20 @@ def checkout(request):
             # All orders should start with PENDING payment status to go through payment flow
             payment_status = 'PENDING'
 
+        # Check if this order is linked to a reservation
+        reservation_id = request.POST.get('reservation_id')
+        reservation = None
+        if reservation_id:
+            try:
+                reservation = Reservation.objects.get(id=reservation_id, user=request.user)
+            except Reservation.DoesNotExist:
+                pass
+
         # Create the order with all the collected information
         order = Order.objects.create(
             user=request.user,
+            customer_name=request.user.get_full_name() or request.user.username,  # Set customer name
+            customer_phone=request.user.customer_profile.phone if hasattr(request.user, 'customer_profile') else '',  # Set customer phone
             status=order_status,
             order_type=order_type,
             payment_method='GCASH',
@@ -305,7 +394,8 @@ def checkout(request):
             table_number=table_number,
             number_of_guests=number_of_guests,
             special_instructions=special_instructions,
-            preparing_at=timezone.now() if order_type == 'DINE_IN' else None  # Set preparing timestamp for dine-in
+            preparing_at=timezone.now() if order_type == 'DINE_IN' else None,  # Set preparing timestamp for dine-in
+            reservation=reservation  # Link to reservation if available
         )
 
         # Add order items
@@ -331,6 +421,9 @@ def checkout(request):
 
         # Create payment URL and redirect
         payment_url = reverse('gcash_payment', kwargs={'order_id': order.id})
+        # If this order is linked to a reservation, pass the reservation_id
+        if reservation_id:
+            payment_url += f'?reservation_id={reservation_id}'
         return redirect(payment_url)
     else:
         # Check for URL parameters
@@ -349,22 +442,37 @@ def checkout(request):
         'subtotal': subtotal,
         'tax': tax,
         'total': total,
-        'occupied_tables': occupied_tables
+        'occupied_tables': occupied_tables,
+        'reservation_id': reservation_id if reservation else ''
     })
 
 
 @login_required
 def gcash_payment(request, order_id):
-    """GCash payment page with QR code"""
-    print(f"GCash payment view called with order_id: {order_id}")
     try:
         order = Order.objects.get(id=order_id, user=request.user)
-        print(f"Order found: {order}")
 
-        # Check if order is already paid
-        if order.payment_status == 'PAID':
-            messages.info(request, 'This order has already been paid.')
-            return redirect('order_confirmation', order_id=order.id)
+        # Check if this order is linked to a reservation
+        # First check POST, then GET, then session
+        reservation_id = request.POST.get('reservation_id') or request.GET.get('reservation_id') or request.session.get('reservation_id')
+        reservation = None
+
+        if reservation_id:
+            try:
+                reservation = Reservation.objects.get(id=reservation_id, user=request.user)
+                # Link order to reservation if not already linked
+                if not order.reservation:
+                    order.reservation = reservation
+                    order.save()
+
+                # Keep reservation_id in session
+                request.session['reservation_id'] = reservation_id
+                request.session.modified = True
+            except Reservation.DoesNotExist:
+                # Clear invalid reservation_id from session
+                if 'reservation_id' in request.session:
+                    del request.session['reservation_id']
+                    request.session.modified = True
 
         # Check if payment exists
         payment = Payment.objects.filter(order=order).first()
@@ -372,38 +480,52 @@ def gcash_payment(request, order_id):
             # Create a new payment record
             payment = Payment.objects.create(
                 order=order,
-                amount=order.total_amount + order.tax_amount + order.delivery_fee - order.discount_amount,
+                amount=order.grand_total,
                 payment_method='GCASH',
                 status='PENDING'
             )
+
+        if request.method == 'POST':
+            form = GCashPaymentForm(request.POST, request.FILES, instance=payment)
+            if form.is_valid():
+                payment = form.save(commit=False)
+
+                # If linked to reservation or dine-in, require cashier verification
+                if order.reservation or order.order_type == 'DINE_IN':
+                    payment.status = 'PENDING'  # Requires verification
+                    payment.save()
+
+                    # Update order status
+                    order.payment_status = 'PENDING_VERIFICATION'
+                    order.save()
+
+                    messages.success(request, 'Payment details submitted! Your payment is awaiting verification by our cashier.')
+                else:
+                    # Auto-approve for regular orders (pickup/delivery)
+                    payment.status = 'COMPLETED'
+                    payment.verification_date = timezone.now()
+                    payment.save()
+
+                    # Update order status
+                    order.payment_status = 'PAID'
+                    order.status = 'COMPLETED'
+                    order.completed_at = timezone.now()
+                    order.save()
+
+                    messages.success(request, 'Payment verified successfully! Your order has been completed.')
+
+                return redirect('order_confirmation', order_id=order.id)
+        else:
+            form = GCashPaymentForm(instance=payment)
+
+        return render(request, 'checkout/gcash_payment.html', {
+            'order': order,
+            'form': form,
+            'reservation_id': reservation_id if reservation else ''
+        })
     except Order.DoesNotExist:
         messages.error(request, 'Order not found.')
         return redirect('view_cart')
-
-    if request.method == 'POST':
-        form = GCashPaymentForm(request.POST, request.FILES, instance=payment)
-        if form.is_valid():
-            payment = form.save(commit=False)
-            payment.status = 'COMPLETED'  # Auto-approve for now, in production this would be verified by staff
-            payment.verification_date = timezone.now()
-            payment.save()
-
-            # Update order status
-            order.payment_status = 'PAID'
-            order.status = 'COMPLETED'  # Mark as completed to skip preparation tracking
-            order.completed_at = timezone.now()
-            order.save()
-
-            messages.success(request, 'Payment verified successfully! Your order has been completed.')
-            return redirect('order_confirmation', order_id=order.id)
-    else:
-        form = GCashPaymentForm(instance=payment)
-
-    return render(request, 'checkout/gcash_payment.html', {
-        'order': order,
-        'payment': payment,
-        'form': form
-    })
 
 
 @login_required
@@ -413,6 +535,11 @@ def order_confirmation(request, order_id):
         order = Order.objects.get(id=order_id, user=request.user)
         order_items = order.order_items.all()
         payment = Payment.objects.filter(order=order).first()
+
+        # Clear reservation_id from session after successful order placement
+        if 'reservation_id' in request.session:
+            del request.session['reservation_id']
+            request.session.modified = True
     except Order.DoesNotExist:
         messages.error(request, 'Order not found.')
         return redirect('view_cart')
@@ -1151,10 +1278,15 @@ def make_reservation(request):
             'phone': user_phone
         }, user=request.user)
 
+    # Add today's date to context for date validation
+    from django.utils import timezone
+    today = timezone.now().date()
+
     context = {
         'form': form,
         'occupied_tables': occupied_tables,
-        'active_section': 'make_reservation'
+        'active_section': 'make_reservation',
+        'today': today
     }
 
     return render(request, 'reservations/make_reservation.html', context)

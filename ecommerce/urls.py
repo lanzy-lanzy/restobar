@@ -20,13 +20,16 @@ from .staff import (
     staff_activity, staff_profile_view
 )
 from .cashier import (
-    cashier_dashboard, new_order, view_order, update_order_status, update_prep_time,
+    cashier_dashboard, organized_dashboard, new_order, view_order, update_order_status, update_prep_time,
     orders_list as cashier_orders_list, print_receipt, print_multiple_receipts,
     pending_payments, view_payment, verify_payment, reject_payment, record_payment,
     cancel_order, reservations_list as cashier_reservations_list, process_reservation,
     pending_reservation_payments, view_reservation_payment, reject_reservation_payment,
     cashier_mark_prepared, preparation_tracker, settle_remaining_balance, cashier_profile_edit,
     unmark_table
+)
+from .cashier_reports import (
+    cashier_view_sales_report, cashier_export_sales_report_pdf
 )
 from .manager import (
     manager_dashboard, sales_report, inventory_overview,
@@ -130,6 +133,7 @@ urlpatterns = [
 
     # Cashier Dashboard
     path('cashier/', cashier_dashboard, name='cashier_dashboard'),
+    path('cashier/organized-dashboard/', organized_dashboard, name='organized_dashboard'),
     path('cashier/profile/', cashier_profile_edit, name='cashier_profile_edit'),
     path('cashier/new-order/', new_order, name='new_order'),
     path('cashier/unmark-table/', unmark_table, name='unmark_table'),
@@ -142,6 +146,10 @@ urlpatterns = [
     path('cashier/order/<int:order_id>/payment/', record_payment, name='record_payment'),
     path('cashier/order/<int:order_id>/cancel/', cancel_order, name='cancel_order'),
     path('cashier/orders/<int:order_id>/settle-balance/', settle_remaining_balance, name='settle_remaining_balance'),
+
+    # Cashier Reports
+    path('cashier/reports/sales/', cashier_view_sales_report, name='cashier_view_sales_report'),
+    path('cashier/reports/sales/export-pdf/', cashier_export_sales_report_pdf, name='cashier_export_sales_report_pdf'),
 
     # Cashier Reservation Management
     path('cashier/reservations/', cashier_reservations_list, name='cashier_reservations_list'),
@@ -160,6 +168,8 @@ urlpatterns = [
     path('cashier/payment/<int:payment_id>/', view_payment, name='view_payment'),
     path('cashier/payment/<int:payment_id>/verify/', verify_payment, name='verify_payment'),
     path('cashier/payment/<int:payment_id>/reject/', reject_payment, name='reject_payment'),
+
+    # Cashier routes continue
 
     # Manager Dashboard
     path('manager/', manager_dashboard, name='manager_dashboard'),

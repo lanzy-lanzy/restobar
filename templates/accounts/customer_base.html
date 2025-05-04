@@ -106,17 +106,8 @@
             <a href="{% url 'my_orders' %}" class="nav-link block py-2 px-4 rounded-lg {% if active_section == 'orders' %}active{% endif %}">
                 <i class="fas fa-shopping-bag mr-2"></i> My Orders
             </a>
-            <a href="{% url 'my_reviews' %}" class="nav-link block py-2 px-4 rounded-lg {% if active_section == 'reviews' %}active{% endif %}">
-                <i class="fas fa-star mr-2"></i> My Reviews
-            </a>
-            <a href="{% url 'profile' %}" class="nav-link block py-2 px-4 rounded-lg {% if active_section == 'profile' %}active{% endif %}">
-                <i class="fas fa-user-circle mr-2"></i> Profile
-            </a>
             <a href="{% url 'my_reservations' %}" class="nav-link block py-2 px-4 rounded-lg {% if active_section == 'my_reservations' %}active{% endif %}">
                 <i class="fas fa-calendar-alt mr-2"></i> My Reservations
-            </a>
-            <a href="#" class="nav-link block py-2 px-4 rounded-lg {% if active_section == 'favorites' %}active{% endif %}">
-                <i class="fas fa-heart mr-2"></i> Favorites
             </a>
             <div class="border-t border-gray-700 my-4"></div>
             <a href="{% url 'home' %}" class="nav-link block py-2 px-4 rounded-lg">

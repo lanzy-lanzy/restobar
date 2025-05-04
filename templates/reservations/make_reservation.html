@@ -56,63 +56,15 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div x-data="datePicker()">
-                        <label for="{{ form.date.id_for_label }}" class="block text-white font-medium mb-2">Date</label>
+                    <div>
+                        <label for="id_date" class="block text-white font-medium mb-2">Date</label>
                         <div class="relative">
-                            <input type="text" id="date_display"
+                            <input type="date" name="date" id="id_date" required
                                    class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-food-gold"
-                                   x-model="formattedDate"
-                                   @click="showDatepicker = !showDatepicker"
-                                   readonly>
-                            <div class="hidden">{{ form.date }}</div>
-                            <div class="absolute right-0 top-0 px-3 py-2 text-gray-400">
-                                <i class="fas fa-calendar-alt"></i>
-                            </div>
-
-                            <!-- Calendar Dropdown -->
-                            <div x-show="showDatepicker"
-                                 @click.away="showDatepicker = false"
-                                 class="absolute z-10 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-4 w-64">
-                                <div class="flex justify-between items-center mb-2">
-                                    <button type="button" @click="prevMonth" class="text-gray-400 hover:text-white">
-                                        <i class="fas fa-chevron-left"></i>
-                                    </button>
-                                    <div class="text-white font-medium" x-text="monthYearText"></div>
-                                    <button type="button" @click="nextMonth" class="text-gray-400 hover:text-white">
-                                        <i class="fas fa-chevron-right"></i>
-                                    </button>
-                                </div>
-
-                                <!-- Days of week -->
-                                <div class="grid grid-cols-7 gap-1 mb-2">
-                                    <template x-for="day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']">
-                                        <div class="text-center text-gray-500 text-xs py-1" x-text="day"></div>
-                                    </template>
-                                </div>
-
-                                <!-- Calendar days -->
-                                <div class="grid grid-cols-7 gap-1">
-                                    <template x-for="blankday in blankdays">
-                                        <div class="text-center text-gray-600 text-sm py-1"></div>
-                                    </template>
-                                    <template x-for="(date, dateIndex) in days" :key="dateIndex">
-                                        <div class="text-center text-sm">
-                                            <button type="button"
-                                                    @click="selectDate(date)"
-                                                    x-text="date"
-                                                    class="w-8 h-8 rounded-full focus:outline-none transition-colors duration-200"
-                                                    :class="{
-                                                        'bg-food-gold text-black font-bold': isSelectedDate(date),
-                                                        'text-gray-400 hover:bg-gray-700': !isSelectedDate(date) && !isToday(date) && isDateSelectable(date),
-                                                        'text-white bg-gray-700': isToday(date) && !isSelectedDate(date),
-                                                        'text-gray-600 cursor-not-allowed': !isDateSelectable(date)
-                                                    }"
-                                                    :disabled="!isDateSelectable(date)">
-                                            </button>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
+                                   min="{{ today|date:'Y-m-d' }}"
+                                   aria-describedby="date-help-text"
+                                   data-date-format="YYYY-MM-DD">
+                            <!-- We'll use CSS to style the calendar icon instead -->
                         </div>
                         {% if form.date.errors %}
                         <p class="text-red-500 text-sm mt-1">{{ form.date.errors.0 }}</p>
@@ -120,6 +72,12 @@
                         {% if form.date.help_text %}
                         <p class="text-gray-500 text-xs mt-1">{{ form.date.help_text }}</p>
                         {% endif %}
+                        <div class="mt-1 p-2 bg-blue-900/30 border border-blue-800 rounded-lg" id="date-help-text">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-blue-400 mt-1 mr-2"></i>
+                                <p class="text-gray-300 text-xs">Reservations can only be made for today or future dates. Tables will be automatically marked as occupied after your reservation is confirmed.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
@@ -131,6 +89,12 @@
                         {% if form.time.help_text %}
                         <p class="text-gray-500 text-xs mt-1">{{ form.time.help_text }}</p>
                         {% endif %}
+                        <div class="mt-1 p-2 bg-yellow-900/30 border border-yellow-800 rounded-lg">
+                            <div class="flex items-start">
+                                <i class="fas fa-clock text-yellow-400 mt-1 mr-2"></i>
+                                <p class="text-gray-300 text-xs">You must place your order within 3 hours of your reservation time, or your table will be released for other customers.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -382,16 +346,137 @@
     .pulse-animation {
         animation: pulse-border 2s infinite;
     }
+
+    /* Date input styling */
+    input[type="date"] {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        color: white !important;
+        background-color: #374151 !important;
+        border: 1px solid #4B5563 !important;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Ensure text is visible in all browsers */
+    input[type="date"]::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Style the calendar picker icon for Webkit browsers */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        cursor: pointer;
+        opacity: 0.8;
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+        width: 20px;
+        height: 20px;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+    }
+
+    /* Firefox specific styling */
+    @-moz-document url-prefix() {
+        input[type="date"] {
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'><rect x='3' y='4' width='18' height='18' rx='2' ry='2'></rect><line x1='16' y1='2' x2='16' y2='6'></line><line x1='8' y1='2' x2='8' y2='6'></line><line x1='3' y1='10' x2='21' y2='10'></line></svg>");
+            background-repeat: no-repeat;
+            background-position: calc(100% - 10px) center;
+            background-size: 16px;
+            padding-right: 30px;
+        }
+    }
+
+    input[type="date"]:focus {
+        outline: none;
+        border-color: #EAB308 !important;
+        box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.3);
+    }
+
+    /* Hide the default date picker icon and use our custom one */
+    input[type="date"]::-webkit-inner-spin-button,
+    input[type="date"]::-webkit-clear-button {
+        display: none;
+    }
+
+    /* Ensure date text is visible in dark mode */
+    input[type="date"] {
+        color-scheme: dark;
+    }
 </style>
 <script>
     // Add custom styling to form fields
     document.addEventListener('DOMContentLoaded', function() {
+        // Apply styling to form inputs
         const formInputs = document.querySelectorAll('input, textarea, select');
         formInputs.forEach(input => {
             if (!input.classList.contains('btn-primary')) {
                 input.classList.add('w-full', 'bg-gray-700', 'border', 'border-gray-600', 'rounded-lg', 'py-3', 'px-4', 'text-white', 'focus:outline-none', 'focus:ring-2', 'focus:ring-food-gold');
             }
         });
+
+        // Initialize and validate date input
+        initializeDatePicker();
+
+        // Function to initialize and enhance the date picker
+        function initializeDatePicker() {
+            const dateInput = document.getElementById('id_date');
+            if (!dateInput) return;
+
+            // Set color scheme to dark for better visibility
+            dateInput.style.colorScheme = 'dark';
+
+            // Add event listener to show a tooltip when focusing on the date input
+            dateInput.addEventListener('focus', function() {
+                // Create tooltip if it doesn't exist
+                if (!document.getElementById('date-tooltip-ui')) {
+                    const tooltip = document.createElement('div');
+                    tooltip.id = 'date-tooltip-ui';
+                    tooltip.className = 'absolute z-10 mt-1 p-2 bg-gray-800 border border-food-gold rounded-lg shadow-lg text-white text-sm';
+                    tooltip.innerHTML = 'Select a date from today onwards';
+                    tooltip.style.width = '200px';
+                    tooltip.style.left = '0';
+                    tooltip.style.top = '100%';
+
+                    this.parentNode.appendChild(tooltip);
+
+                    // Remove tooltip when clicking outside
+                    document.addEventListener('click', function removeTooltip(e) {
+                        if (e.target !== dateInput) {
+                            const tooltip = document.getElementById('date-tooltip-ui');
+                            if (tooltip) {
+                                tooltip.remove();
+                            }
+                            document.removeEventListener('click', removeTooltip);
+                        }
+                    });
+                }
+            });
+
+            // Add click handler to open the date picker when clicking anywhere in the container
+            const dateContainer = dateInput.closest('.relative');
+            if (dateContainer) {
+                dateContainer.addEventListener('click', function(e) {
+                    // Don't trigger if clicking on the input itself (it already opens the picker)
+                    if (e.target !== dateInput) {
+                        dateInput.showPicker ? dateInput.showPicker() : dateInput.focus();
+                    }
+                });
+            }
+
+            // Run the validation function to set up the date picker
+            validateDateInput();
+        }
     });
 
     // Alpine.js component initialization
@@ -783,129 +868,60 @@
         document.head.appendChild(style);
     });
 
-    // Date picker component
-    function datePicker() {
-        return {
-            showDatepicker: false,
-            datepickerValue: '',
-            selectedDate: new Date(),
-            month: '',
-            year: '',
-            days: [],
-            blankdays: [],
-            formattedDate: '',
+    // Date validation function
+    function validateDateInput() {
+        const dateInput = document.getElementById('id_date');
+        if (!dateInput) return;
 
-            initDate() {
-                let today = new Date();
-                this.month = today.getMonth();
-                this.year = today.getFullYear();
-                this.selectedDate = today;
-                this.datepickerValue = this.formatDateForInput(today);
-                this.formattedDate = this.formatDateForDisplay(today);
+        // Set minimum date to today (using local timezone)
+        const today = new Date();
+        // Reset time to start of day to avoid timezone issues
+        today.setHours(0, 0, 0, 0);
 
-                // Set the hidden input value
-                document.getElementById('id_date').value = this.datepickerValue;
-            },
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayFormatted = `${yyyy}-${mm}-${dd}`;
 
-            formatDateForInput(date) {
-                // Format as YYYY-MM-DD for the hidden input
-                let month = (date.getMonth() + 1).toString().padStart(2, '0');
-                let day = date.getDate().toString().padStart(2, '0');
-                return `${date.getFullYear()}-${month}-${day}`;
-            },
+        // Set min attribute to today
+        dateInput.min = todayFormatted;
 
-            formatDateForDisplay(date) {
-                // Format as Month DD, YYYY for display
-                const options = { year: 'numeric', month: 'long', day: 'numeric' };
-                return date.toLocaleDateString('en-US', options);
-            },
+        // Set default value to today if not already set
+        if (!dateInput.value) {
+            dateInput.value = todayFormatted;
+        }
 
-            isToday(day) {
+        // Add event listener to validate date selection
+        dateInput.addEventListener('input', validateSelectedDate);
+        dateInput.addEventListener('change', validateSelectedDate);
+        dateInput.addEventListener('blur', validateSelectedDate);
+
+        // Initial validation
+        validateSelectedDate.call(dateInput);
+
+        // Function to validate the selected date
+        function validateSelectedDate() {
+            if (!this.value) return;
+
+            try {
+                // Parse the selected date (YYYY-MM-DD format)
+                const [year, month, day] = this.value.split('-').map(num => parseInt(num, 10));
+                const selectedDate = new Date(year, month - 1, day);
+                selectedDate.setHours(0, 0, 0, 0);
+
                 const today = new Date();
-                return day === today.getDate() &&
-                       this.month === today.getMonth() &&
-                       this.year === today.getFullYear();
-            },
+                today.setHours(0, 0, 0, 0);
 
-            isSelectedDate(day) {
-                return day === this.selectedDate.getDate() &&
-                       this.month === this.selectedDate.getMonth() &&
-                       this.year === this.selectedDate.getFullYear();
-            },
-
-            isDateSelectable(day) {
-                // Only allow dates from today onwards
-                const today = new Date();
-                const checkDate = new Date(this.year, this.month, day);
-                return checkDate >= new Date(today.setHours(0, 0, 0, 0));
-            },
-
-            getNoOfDays() {
-                let daysInMonth = new Date(this.year, this.month + 1, 0).getDate();
-
-                // Find out the first day of the month
-                let firstDayOfMonth = new Date(this.year, this.month, 1).getDay();
-
-                let blankdaysArray = [];
-                for (let i = 0; i < firstDayOfMonth; i++) {
-                    blankdaysArray.push(i);
+                if (selectedDate < today) {
+                    console.log('Invalid date selected:', this.value);
+                    alert('Sorry, you can only select today or future dates for reservations.');
+                    this.value = todayFormatted;
                 }
-
-                let daysArray = [];
-                for (let i = 1; i <= daysInMonth; i++) {
-                    daysArray.push(i);
-                }
-
-                this.blankdays = blankdaysArray;
-                this.days = daysArray;
-            },
-
-            selectDate(day) {
-                if (!this.isDateSelectable(day)) return;
-
-                this.selectedDate = new Date(this.year, this.month, day);
-                this.datepickerValue = this.formatDateForInput(this.selectedDate);
-                this.formattedDate = this.formatDateForDisplay(this.selectedDate);
-
-                // Set the hidden input value
-                document.getElementById('id_date').value = this.datepickerValue;
-
-                this.showDatepicker = false;
-            },
-
-            prevMonth() {
-                if (this.month === 0) {
-                    this.year--;
-                    this.month = 11;
-                } else {
-                    this.month--;
-                }
-                this.getNoOfDays();
-            },
-
-            nextMonth() {
-                if (this.month === 11) {
-                    this.year++;
-                    this.month = 0;
-                } else {
-                    this.month++;
-                }
-                this.getNoOfDays();
-            },
-
-            get monthYearText() {
-                const months = [
-                    'January', 'February', 'March', 'April', 'May', 'June',
-                    'July', 'August', 'September', 'October', 'November', 'December'
-                ];
-                return `${months[this.month]} ${this.year}`;
-            },
-
-            init() {
-                this.initDate();
-                this.getNoOfDays();
+            } catch (error) {
+                console.error('Error validating date:', error);
+                this.value = todayFormatted;
             }
-        };
+        }
     }
 </script>
 {% endblock extra_scripts %}

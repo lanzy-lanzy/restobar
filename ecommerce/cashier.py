@@ -3,36 +3,39 @@ from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Sum, F, Q
-from django.http import JsonResponse, HttpResponseRedirect
+from django.db.models import Sum, F, Q, Count
+from django.http import JsonResponse, HttpResponse
 from decimal import Decimal, InvalidOperation
 from django.contrib.auth.models import User
 from django.urls import reverse
 from datetime import datetime
-import json
 
-from .models import Order, OrderItem, MenuItem, StaffActivity, Payment, Refund, Reservation, Category, ReservationPayment
+from .models import Order, OrderItem, MenuItem, StaffActivity, Payment, Refund, Reservation, ReservationPayment
 
 @login_required
 def cashier_dashboard(request):
-    # Check if user has cashier role
-    if hasattr(request.user, 'staff_profile') and request.user.staff_profile.role == 'CASHIER':
-        # Grant the permission if the user has the cashier role
-        from django.contrib.auth.models import Permission
-        from django.contrib.contenttypes.models import ContentType
-        from .models import StaffProfile
-
-        # Try to get the permission
-        try:
-            content_type = ContentType.objects.get_for_model(StaffProfile)
-            perm = Permission.objects.get(codename='process_orders', content_type=content_type)
-            # Add the permission to the user
-            request.user.user_permissions.add(perm)
-            request.user.save()
-            print(f"Added process_orders permission to user {request.user.username}")
-        except Exception as e:
-            print(f"Error adding permission: {str(e)}")
     """Main dashboard for cashiers"""
+    # Check if user has cashier role
+    if not hasattr(request.user, 'staff_profile') or request.user.staff_profile.role != 'CASHIER':
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('login')
+
+    # Grant the permission if the user has the cashier role
+    from django.contrib.auth.models import Permission
+    from django.contrib.contenttypes.models import ContentType
+    from .models import StaffProfile
+
+    # Try to get the permission
+    try:
+        content_type = ContentType.objects.get_for_model(StaffProfile)
+        perm = Permission.objects.get(codename='process_orders', content_type=content_type)
+        # Add the permission to the user
+        request.user.user_permissions.add(perm)
+        request.user.save()
+        print(f"Added process_orders permission to user {request.user.username}")
+    except Exception as e:
+        print(f"Error adding permission: {str(e)}")
+
     # Get today's date
     today = timezone.now().date()
 
@@ -163,6 +166,68 @@ def cashier_dashboard(request):
     }
 
     return render(request, 'cashier/dashboard.html', context)
+
+@login_required
+def organized_dashboard(request):
+    """Order organization view for cashiers to manage orders, reservations, and walk-ins"""
+    # Check if user has cashier role
+    if not hasattr(request.user, 'staff_profile') or request.user.staff_profile.role != 'CASHIER':
+        messages.error(request, "You don't have permission to access this page.")
+        return redirect('login')
+
+    # Get today's date
+    today = timezone.now().date()
+
+    # Get today's orders
+    today_orders = Order.objects.filter(
+        created_at__date=today
+    ).order_by('-created_at')
+
+    # Get pending orders (not completed or cancelled)
+    pending_orders = today_orders.filter(
+        status__in=['PENDING', 'PREPARING', 'READY']
+    )
+
+    # Get completed orders
+    completed_orders = today_orders.filter(status='COMPLETED')
+
+    # Get unprocessed reservations
+    unprocessed_reservations = Reservation.objects.filter(
+        status='CONFIRMED',
+        date=today,
+        is_processed=False
+    ).order_by('time')
+
+    # Get completed reservations
+    completed_reservations = Reservation.objects.filter(
+        status='COMPLETED',
+        date=today
+    ).order_by('-processed_at')
+
+    # Get pending payments
+    pending_payments = Payment.objects.filter(
+        status='PENDING'
+    ).order_by('-payment_date')
+
+    # Log activity
+    StaffActivity.objects.create(
+        staff=request.user,
+        action='VIEW',
+        details=f"Accessed order organization page",
+        ip_address=get_client_ip(request)
+    )
+
+    context = {
+        'today_date': today,
+        'pending_orders': pending_orders,
+        'completed_orders': completed_orders,
+        'unprocessed_reservations': unprocessed_reservations,
+        'completed_reservations': completed_reservations,
+        'pending_payments': pending_payments,
+        'active_section': 'organized_dashboard'
+    }
+
+    return render(request, 'cashier/organized_dashboard.html', context)
 
 @login_required
 def new_order(request):
@@ -1274,6 +1339,8 @@ def process_reservation(request, reservation_id):
             # Create order and link to reservation
             order = Order.objects.create(
                 user=reservation.user,
+                customer_name=reservation.name,
+                customer_phone=reservation.phone,
                 status=order_status,
                 order_type='DINE_IN',
                 payment_method=payment_method,
@@ -1282,7 +1349,8 @@ def process_reservation(request, reservation_id):
                 number_of_guests=reservation.party_size,
                 special_instructions=clean_special_requests,
                 created_by=request.user,
-                total_amount=reservation.total_amount
+                total_amount=reservation.total_amount,
+                reservation=reservation  # Link to reservation
             )
 
             # Add pre-ordered menu items to the order if any
@@ -1670,3 +1738,6 @@ def preparation_tracker(request):
     }
 
     return render(request, 'cashier/preparation_tracker.html', context)
+
+
+# Sales report functions removed

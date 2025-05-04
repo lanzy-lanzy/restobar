@@ -23,7 +23,7 @@ class RoleMiddleware:
         current_path = request.path.strip('/')
 
         # Define role-specific paths
-        cashier_paths = ['cashier', 'cashier/', 'cashier/dashboard', 'cashier/orders', 'cashier/new-order', 'cashier/payments', 'cashier/payment']
+        cashier_paths = ['cashier', 'cashier/', 'cashier/dashboard', 'cashier/orders', 'cashier/new-order', 'cashier/payments', 'cashier/payment', 'cashier/reports', 'cashier/reports/sales', 'cashier/reports/sales/export-pdf']
         manager_paths = ['manager', 'manager/']
         admin_paths = ['admin', 'admin/']
         customer_paths = ['customer', 'customer/dashboard', 'customer/orders', 'my-orders']

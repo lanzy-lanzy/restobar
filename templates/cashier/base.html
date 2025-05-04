@@ -180,6 +180,14 @@
         Dashboard
       </a>
 
+      <!-- Order Organization -->
+      <a href="{% url 'organized_dashboard' %}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if active_section == 'organized_dashboard' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %}">
+        <svg class="mr-3 h-6 w-6 {% if active_section == 'organized_dashboard' %}text-white{% else %}text-gray-400 group-hover:text-white{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+        </svg>
+        Order Organization
+      </a>
+
       <!-- New Order -->
       <a href="{% url 'new_order' %}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if active_section == 'new_order' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %} mt-1">
         <svg class="mr-3 h-6 w-6 {% if active_section == 'new_order' %}text-white{% else %}text-gray-400 group-hover:text-white{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,21 +238,8 @@
         Reservations
       </a>
 
-      <!-- Ready for Preparation -->
-      <a href="{% url 'cashier_reservations_list' %}?status=unprocessed&date_filter=today_and_future" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-700 mt-1 ml-6">
-        <div class="relative">
-          <i class="fas fa-utensils mr-3 h-6 w-6 text-gray-400 group-hover:text-white flex items-center justify-center"></i>
-        </div>
-        Ready for Preparation
-      </a>
 
-      <!-- Preparation Tracker -->
-      <a href="{% url 'preparation_tracker' %}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if active_section == 'preparation_tracker' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %} mt-3">
-        <div class="relative">
-          <i class="fas fa-tasks mr-3 h-6 w-6 {% if active_section == 'preparation_tracker' %}text-white{% else %}text-gray-400 group-hover:text-white{% endif %} flex items-center justify-center"></i>
-        </div>
-        Preparation Tracker
-      </a>
+
 
       <!-- Menu Items -->
       <a href="{% url 'menu' %}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if active_section == 'menu' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %} mt-1">
@@ -252,6 +247,14 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
         </svg>
         Menu
+      </a>
+
+      <!-- Reports -->
+      <a href="{% url 'cashier_view_sales_report' %}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if active_section == 'cashier_sales_report' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %} mt-1">
+        <svg class="mr-3 h-6 w-6 {% if active_section == 'cashier_sales_report' %}text-white{% else %}text-gray-400 group-hover:text-white{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        </svg>
+        Sales Reports
       </a>
 
       <div class="border-t border-gray-700 my-4"></div>
@@ -324,6 +327,9 @@
 
 <!-- Django Messages -->
 {% include 'components/messages/messages.html' %}
+
+<!-- Cashier Notifications -->
+{% include 'components/notifications/cashier_notifications.html' %}
 
 {% block extra_scripts %}{% endblock extra_scripts %}
 

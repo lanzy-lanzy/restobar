@@ -37,14 +37,26 @@
                     <i class="fas fa-check-circle text-green-500 text-3xl"></i>
                 </div>
                 <h1 class="text-2xl font-bold text-green-500 mb-2">
-                  {% if order.status == 'COMPLETED' %}Order Completed!{% else %}Order Placed Successfully!{% endif %}
+                  {% if order.status == 'COMPLETED' %}Order Completed!{% elif order.reservation %}Reservation Order Placed!{% else %}Order Placed Successfully!{% endif %}
                 </h1>
-                {% if order.status == 'COMPLETED' %}
+                {% if order.status == 'COMPLETED' and not order.reservation %}
                 <p class="text-green-200 font-semibold mb-2">Thank you for your order. Your transaction is now complete.</p>
                 <a href="#" class="inline-block mt-2 px-4 py-2 bg-blue-900/70 hover:bg-blue-800 text-blue-300 rounded-lg text-sm font-bold transition-colors duration-200"><i class="fas fa-receipt mr-1"></i> Download Receipt</a>
                 <a href="#" class="inline-block mt-2 px-4 py-2 bg-green-900/70 hover:bg-green-800 text-green-300 rounded-lg text-sm font-bold transition-colors duration-200"><i class="fas fa-star mr-1"></i> Give Feedback</a>
+                {% elif order.reservation %}
+                <p class="text-blue-200 font-semibold mb-2">Thank you for adding items to your reservation.</p>
+                <p class="text-gray-300">Your payment has been submitted and is awaiting cashier verification. Your order will be prepared for your arrival at your reserved table.</p>
+                <div class="mt-4 bg-blue-900/30 border border-blue-800 rounded-lg p-4 inline-block">
+                    <p class="text-blue-300 font-medium flex items-center"><i class="fas fa-info-circle mr-2"></i> Next Steps</p>
+                    <p class="text-gray-300 text-sm mt-1">Our cashier will verify your payment and prepare your order. Please arrive at your reserved time.</p>
+                </div>
                 {% elif order.order_type == 'DINE_IN' %}
-                <p class="text-gray-300">Thank you for your order. Your table has been reserved and your order will be prepared for your arrival.</p>
+                <p class="text-blue-200 font-semibold mb-2">Thank you for your dine-in order.</p>
+                <p class="text-gray-300">Your payment has been submitted and is awaiting cashier verification. Your table will be reserved once payment is verified.</p>
+                <div class="mt-4 bg-blue-900/30 border border-blue-800 rounded-lg p-4 inline-block">
+                    <p class="text-blue-300 font-medium flex items-center"><i class="fas fa-info-circle mr-2"></i> Next Steps</p>
+                    <p class="text-gray-300 text-sm mt-1">Our cashier will verify your payment and reserve your table. Please arrive within 30 minutes of payment confirmation.</p>
+                </div>
                 {% else %}
                 <p class="text-gray-300">Thank you for your order. We've received your order and will begin processing it right away.</p>
                 {% endif %}
@@ -146,9 +158,14 @@
                                 {% if order.payment_status == 'UNPAID' %}bg-yellow-900/30 text-yellow-500{% endif %}
                                 {% if order.payment_status == 'PAID' %}bg-green-900/30 text-green-500{% endif %}
                                 {% if order.payment_status == 'FAILED' %}bg-red-900/30 text-red-500{% endif %}
-                                {% if order.payment_status == 'REFUNDED' %}bg-blue-900/30 text-blue-500{% endif %}">
+                                {% if order.payment_status == 'REFUNDED' %}bg-blue-900/30 text-blue-500{% endif %}
+                                {% if order.payment_status == 'PENDING_VERIFICATION' %}bg-blue-900/30 text-blue-500{% endif %}">
                                 <i class="fas fa-circle text-xs mr-1"></i>
+                                {% if order.payment_status == 'PENDING_VERIFICATION' %}
+                                Awaiting Verification
+                                {% else %}
                                 {{ order.get_payment_status_display }}
+                                {% endif %}
                             </span>
                         </div>
 
@@ -173,6 +190,16 @@
                         <a href="{{ payment.payment_proof.url }}" target="_blank" class="inline-block">
                             <img src="{{ payment.payment_proof.url }}" alt="Payment Proof" class="max-w-xs rounded-lg border border-gray-700 object-contain">
                         </a>
+                    </div>
+                    {% endif %}
+
+                    {% if order.reservation %}
+                    <div class="mt-6 bg-blue-900/30 border border-blue-800 rounded-lg p-4">
+                        <h4 class="font-medium text-blue-400 mb-2 flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i> Reservation Payment Information
+                        </h4>
+                        <p class="text-gray-300 text-sm">Your payment is being verified by our cashier. This process typically takes a few minutes. You'll receive a notification once your payment is verified.</p>
+                        <p class="text-gray-300 text-sm mt-2">Your order will be prepared for your arrival at your reserved time.</p>
                     </div>
                     {% endif %}
                 </div>
@@ -210,7 +237,11 @@
                         <div class="md:col-span-2">
                             <div class="bg-blue-900/30 p-4 rounded-lg border border-blue-800 mt-2">
                                 <h4 class="font-medium text-blue-400 mb-2"><i class="fas fa-info-circle mr-2"></i> Table Reservation Information</h4>
+                                {% if order.reservation %}
+                                <p class="text-gray-300 text-sm">Your table is already reserved. Please arrive at your scheduled reservation time. Your order will be prepared and served at your table.</p>
+                                {% else %}
                                 <p class="text-gray-300 text-sm">Your table has been reserved. Please arrive within 30 minutes of your order time. Your order will be prepared and served at your table.</p>
+                                {% endif %}
                             </div>
                         </div>
                         {% endif %}

@@ -274,6 +274,7 @@ class Order(models.Model):
     cancellation_reason = models.CharField(max_length=50, choices=CANCELLATION_REASON_CHOICES, blank=True, null=True)
     cancellation_notes = models.TextField(blank=True, null=True)
     cancelled_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='cancelled_orders')
+    reservation = models.ForeignKey('Reservation', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
 
     class Meta:
         ordering = ['-created_at']
