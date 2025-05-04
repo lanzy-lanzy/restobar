@@ -398,6 +398,13 @@ def checkout(request):
             reservation=reservation  # Link to reservation if available
         )
 
+        # If this order is linked to a reservation without pre-orders, mark it as having placed an order
+        # and update has_menu_items to True to avoid duplicate processing
+        if reservation and not reservation.has_menu_items:
+            reservation.has_placed_order = True
+            reservation.has_menu_items = True  # Set to True to avoid duplicate processing
+            reservation.save(update_fields=['has_placed_order', 'has_menu_items'])
+
         # Add order items
         for cart_item in cart_items:
             OrderItem.objects.create(

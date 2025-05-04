@@ -1,5 +1,6 @@
 from .views import get_cart_count
 from django.utils import timezone
+from django.db import models
 from .models import Reservation, ReservationPayment, Order
 
 def cart_processor(request):
@@ -31,9 +32,11 @@ def reservation_processor(request):
     )
 
     # Get reservations without pre-ordered menu items
+    # Only include those where the customer has placed an order or has pre-ordered items
     reservations_without_preorders = confirmed_reservations.filter(
         is_processed=False,
-        has_menu_items=False
+        has_menu_items=False,
+        has_placed_order=True  # Only show if customer has placed an order
     )
 
     # Count of pending reservation payments for cashiers
@@ -109,10 +112,14 @@ def cashier_notification_processor(request):
     pending_reservation_without_preorder_orders = reservation_without_preorder_orders.filter(status__in=['PENDING', 'PREPARING', 'READY'])
 
     # Get unprocessed reservations that need attention
+    # For reservations without pre-orders, only include those where the customer has placed an order
     unprocessed_reservations = Reservation.objects.filter(
         status='CONFIRMED',
         date=today,
         is_processed=False
+    ).filter(
+        # Either has pre-ordered menu items OR has placed an order
+        models.Q(has_menu_items=True) | models.Q(has_placed_order=True)
     ).order_by('time')
 
     # Get pending reservation payments

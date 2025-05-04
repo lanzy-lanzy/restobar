@@ -3,6 +3,7 @@ from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+from django.db import models
 from django.db.models import Sum, F, Q, Count
 from django.http import JsonResponse, HttpResponse
 from decimal import Decimal, InvalidOperation
@@ -56,10 +57,14 @@ def cashier_dashboard(request):
     cancelled_orders = today_orders.filter(status='CANCELLED')
 
     # Get unprocessed reservations
+    # For reservations without pre-orders, only include those where the customer has placed an order
     unprocessed_reservations = Reservation.objects.filter(
         status='CONFIRMED',
         date=today,
         is_processed=False
+    ).filter(
+        # Either has pre-ordered menu items OR has placed an order
+        models.Q(has_menu_items=True) | models.Q(has_placed_order=True)
     ).order_by('time')
 
     # Get completed reservations
@@ -192,10 +197,14 @@ def organized_dashboard(request):
     completed_orders = today_orders.filter(status='COMPLETED')
 
     # Get unprocessed reservations
+    # For reservations without pre-orders, only include those where the customer has placed an order
     unprocessed_reservations = Reservation.objects.filter(
         status='CONFIRMED',
         date=today,
         is_processed=False
+    ).filter(
+        # Either has pre-ordered menu items OR has placed an order
+        models.Q(has_menu_items=True) | models.Q(has_placed_order=True)
     ).order_by('time')
 
     # Get completed reservations
@@ -1241,7 +1250,14 @@ def reservations_list(request):
     status_filter = request.GET.get('status', 'all')
     if status_filter == 'unprocessed':
         # Show confirmed reservations that need preparation
-        reservations = reservations.filter(status='CONFIRMED')
+        # For reservations without pre-orders, only include those where the customer has placed an order
+        reservations = reservations.filter(
+            status='CONFIRMED',
+            is_processed=False
+        ).filter(
+            # Either has pre-ordered menu items OR has placed an order
+            models.Q(has_menu_items=True) | models.Q(has_placed_order=True)
+        )
     elif status_filter == 'confirmed':
         # Show all confirmed reservations
         reservations = reservations.filter(status='CONFIRMED')
@@ -1283,6 +1299,16 @@ def process_reservation(request, reservation_id):
     reservation_items = reservation.reservation_items.all()
     has_menu_items = reservation_items.exists()
 
+    # Check if there's already an existing order for this reservation
+    existing_order = Order.objects.filter(reservation=reservation).first()
+
+    # If the customer has placed an order for this reservation but it doesn't have pre-ordered menu items,
+    # we need to check if there are any OrderItems linked to this reservation through an Order
+    if not has_menu_items and reservation.has_placed_order:
+        if existing_order:
+            # If there's an existing order, we'll use its items
+            has_menu_items = existing_order.order_items.exists()
+
     if request.method == 'POST':
         with transaction.atomic():
             # Get special requests without menu items data
@@ -1308,6 +1334,20 @@ def process_reservation(request, reservation_id):
             reservation.processed_at = timezone.now()
             reservation.status = 'COMPLETED'
             reservation.save(update_fields=['is_processed', 'processed_by', 'processed_at', 'status'])
+
+            # If there's already an existing order for this reservation that's paid and completed,
+            # just mark the reservation as processed and don't create a new order
+            if existing_order and existing_order.payment_status == 'PAID' and existing_order.status == 'COMPLETED':
+                # Log activity
+                StaffActivity.objects.create(
+                    staff=request.user,
+                    action='PROCESS_RESERVATION',
+                    details=f"Processed reservation #{reservation.id} (Using existing order #{existing_order.id})",
+                    ip_address=get_client_ip(request)
+                )
+
+                # Redirect to print receipt for the existing order
+                return redirect('print_receipt', order_id=existing_order.id)
 
             # Determine payment method/status
             payment_method = 'CASH'
@@ -1336,6 +1376,15 @@ def process_reservation(request, reservation_id):
                     latest_payment = pending_payments.first()
                     payment_method = 'GCASH'
 
+            # Calculate the total amount
+            total_amount = reservation.total_amount
+
+            # If the reservation has no pre-ordered items but the customer has placed an order,
+            # we need to calculate the total from the existing order
+            if not reservation_items.exists() and reservation.has_placed_order and existing_order:
+                # Use the existing order's total amount
+                total_amount = existing_order.total_amount
+
             # Create order and link to reservation
             order = Order.objects.create(
                 user=reservation.user,
@@ -1349,24 +1398,43 @@ def process_reservation(request, reservation_id):
                 number_of_guests=reservation.party_size,
                 special_instructions=clean_special_requests,
                 created_by=request.user,
-                total_amount=reservation.total_amount,
+                total_amount=total_amount,
                 reservation=reservation  # Link to reservation
             )
 
             # Add pre-ordered menu items to the order if any
             if has_menu_items:
-                for item in reservation_items:
-                    OrderItem.objects.create(
-                        order=order,
-                        menu_item=item.menu_item,
-                        quantity=item.quantity,
-                        price=item.price,
-                        special_instructions=item.special_instructions
-                    )
+                # If there are reservation items, add them to the order
+                if reservation_items.exists():
+                    for item in reservation_items:
+                        OrderItem.objects.create(
+                            order=order,
+                            menu_item=item.menu_item,
+                            quantity=item.quantity,
+                            price=item.price,
+                            special_instructions=item.special_instructions
+                        )
 
-                    # Mark reservation item as prepared
-                    item.is_prepared = True
-                    item.save(update_fields=['is_prepared'])
+                        # Mark reservation item as prepared
+                        item.is_prepared = True
+                        item.save(update_fields=['is_prepared'])
+                # If there are no reservation items but the customer has placed an order,
+                # check if there's an existing order and copy its items
+                elif reservation.has_placed_order and existing_order:
+                    if existing_order.order_items.exists():
+                        # Copy items from the existing order
+                        for item in existing_order.order_items.all():
+                            OrderItem.objects.create(
+                                order=order,
+                                menu_item=item.menu_item,
+                                quantity=item.quantity,
+                                price=item.price,
+                                special_instructions=item.special_instructions
+                            )
+
+                        # Recalculate the total amount based on the copied items
+                        order.total_amount = order.calculate_total()
+                        order.save(update_fields=['total_amount'])
 
             # Log activity
             StaffActivity.objects.create(

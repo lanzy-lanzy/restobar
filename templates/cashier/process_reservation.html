@@ -201,6 +201,18 @@
                 </ul>
             </div>
 
+            {% if not reservation.has_menu_items and reservation.has_placed_order %}
+            <div class="bg-blue-900/30 p-4 rounded-lg border border-blue-800 mb-4">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-400 mt-1 mr-3 text-lg"></i>
+                    <div>
+                        <p class="text-blue-300 font-medium">Customer has placed an order for this reservation</p>
+                        <p class="text-gray-400 text-sm mt-1">This reservation appears here because the customer has placed an order from their reservation page.</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             {% if reservation.status == 'CONFIRMED' and reservation.payment_status in 'PAID,PARTIALLY_PAID' %}
                 <div class="bg-green-900/30 p-4 rounded-lg border border-green-800 mb-4">
                     <div class="flex items-start">

@@ -132,6 +132,7 @@ class Reservation(models.Model):
     )
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_processed = models.BooleanField(default=False, help_text="Whether the reservation has been processed by a cashier")
+    has_placed_order = models.BooleanField(default=False, help_text="Whether the customer has placed an order for this reservation")
     processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='processed_reservations', null=True, blank=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
