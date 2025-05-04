@@ -184,112 +184,13 @@
     </div>
 
     <!-- Recent Reviews with Real-time Updates -->
-    <div class="bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg p-6 shadow-lg border border-gray-700 hover:border-yellow-500/30 transition-all duration-300">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center">
-                <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-500 mr-3 border border-yellow-500/30">
-                    <i class="fas fa-star"></i>
-                </div>
-                <h2 class="text-xl font-bold">Your Recent Reviews</h2>
-                <div class="ml-3 flex items-center">
-                    <span class="relative flex h-3 w-3">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
-                    </span>
-                    <span class="ml-2 text-xs text-gray-400">Real-time updates</span>
-                </div>
-            </div>
-            <a href="{% url 'my_reviews' %}" class="text-food-gold hover:text-food-gold-light transition-colors duration-200 flex items-center px-3 py-1 rounded-full border border-food-gold/30 hover:border-food-gold hover:bg-food-gold/10">
-                View All <i class="fas fa-arrow-right ml-2"></i>
-            </a>
-        </div>
-
-        <div id="reviews-section" hx-get="{% url 'customer_dashboard' %}?section=reviews" hx-trigger="every 15s" hx-swap="innerHTML">
-            {% include 'accounts/partials/dashboard_reviews.html' %}
-        </div>
-    </div>
-
+    
     <!-- Quick Actions -->
-    <div class="bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg p-6 shadow-lg border border-gray-700">
-        <div class="flex items-center mb-6">
-            <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-500 mr-3">
-                <i class="fas fa-bolt"></i>
-            </div>
-            <h2 class="text-xl font-bold">Quick Actions</h2>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <a href="{% url 'menu' %}" class="bg-gray-800/50 hover:bg-food-gold/90 text-white hover:text-gray-900 transition-all duration-200 rounded-lg p-4 border border-gray-700 shadow-md text-center group">
-                <div class="w-12 h-12 mx-auto rounded-full bg-food-gold/20 group-hover:bg-gray-900/20 flex items-center justify-center text-food-gold group-hover:text-gray-900 mb-3 transition-all duration-200">
-                    <i class="fas fa-utensils text-xl"></i>
-                </div>
-                <h3 class="font-bold mb-1">Order Food</h3>
-                <p class="text-sm text-gray-400 group-hover:text-gray-800">Browse our delicious menu</p>
-            </a>
-
-            <a href="javascript:void(0);" id="open-reservation-modal" onclick="openReservationModal(); return false;" class="bg-gray-800/50 hover:bg-blue-500/90 text-white hover:text-gray-900 transition-all duration-200 rounded-lg p-4 border border-gray-700 shadow-md text-center group">
-                <div class="w-12 h-12 mx-auto rounded-full bg-blue-500/20 group-hover:bg-gray-900/20 flex items-center justify-center text-blue-500 group-hover:text-gray-900 mb-3 transition-all duration-200">
-                    <i class="fas fa-calendar-alt text-xl"></i>
-                </div>
-                <h3 class="font-bold mb-1">Make Reservation</h3>
-                <p class="text-sm text-gray-400 group-hover:text-gray-800">Book a table at our restaurant</p>
-            </a>
-
-            <a href="{% url 'profile' %}" class="bg-gray-800/50 hover:bg-green-500/90 text-white hover:text-gray-900 transition-all duration-200 rounded-lg p-4 border border-gray-700 shadow-md text-center group">
-                <div class="w-12 h-12 mx-auto rounded-full bg-green-500/20 group-hover:bg-gray-900/20 flex items-center justify-center text-green-500 group-hover:text-gray-900 mb-3 transition-all duration-200">
-                    <i class="fas fa-user-edit text-xl"></i>
-                </div>
-                <h3 class="font-bold mb-1">Update Profile</h3>
-                <p class="text-sm text-gray-400 group-hover:text-gray-800">Edit your account information</p>
-            </a>
-        </div>
-    </div>
+    
 </div>
 
 <!-- Reservation Modal -->
-<div id="reservation-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden" onclick="if(event.target === this) closeReservationModal()">
-    <div class="bg-gray-800 rounded-lg shadow-lg max-w-4xl w-full mx-4 border border-gray-700 overflow-y-auto max-h-[90vh]">
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-white">Make a Reservation</h3>
-                <button id="close-reservation-modal" onclick="closeReservationModal(); return false;" class="text-gray-400 hover:text-white">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
 
-            <div id="reservation-form-container">
-                {% include 'reservations/reservation_form_modal.html' %}
-            </div>
-
-            <div id="reservation-success" class="hidden text-center py-8">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-900/50 flex items-center justify-center text-green-500 text-2xl">
-                    <i class="fas fa-check"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-2">Reservation Submitted!</h3>
-                <p class="text-gray-400 mb-6">Your reservation has been submitted successfully. We will confirm it shortly.</p>
-                <div class="flex justify-center space-x-4">
-                    <a href="{% url 'my_reservations' %}" class="bg-food-gold hover:bg-food-gold-light text-black font-bold py-2 px-4 rounded-lg transition duration-300">
-                        View My Reservations
-                    </a>
-                    <button id="make-another-reservation" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                        Make Another Reservation
-                    </button>
-                </div>
-            </div>
-
-            <div id="reservation-error" class="hidden text-center py-8">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-900/50 flex items-center justify-center text-red-500 text-2xl">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-2">Oops! Something went wrong</h3>
-                <p id="error-message" class="text-gray-400 mb-6">There was an error submitting your reservation. Please try again.</p>
-                <button id="try-again" class="bg-food-gold hover:bg-food-gold-light text-black font-bold py-2 px-4 rounded-lg transition duration-300">
-                    Try Again
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock content %}
 
 {% block extra_scripts %}
