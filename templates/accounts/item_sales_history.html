@@ -31,11 +31,11 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
                     <div>
                         <span class="text-gray-400 text-sm">Current Price:</span>
-                        <p class="font-semibold">${{ menu_item.price }}</p>
+                        <p class="font-semibold">₱{{ menu_item.price }}</p>
                     </div>
                     <div>
                         <span class="text-gray-400 text-sm">Cost Price:</span>
-                        <p class="font-semibold">${{ menu_item.cost_price }}</p>
+                        <p class="font-semibold">₱{{ menu_item.cost_price }}</p>
                     </div>
                     <div>
                         <span class="text-gray-400 text-sm">Profit Margin:</span>
@@ -108,10 +108,10 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-gray-400 text-sm font-medium">Total Revenue</h3>
-                    <p class="text-2xl font-bold mt-1 text-green-400">${{ total_revenue|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold mt-1 text-green-400">₱{{ total_revenue|floatformat:2 }}</p>
                 </div>
                 <div class="bg-green-900 p-3 rounded-full">
-                    <i class="fas fa-dollar-sign text-green-400 text-xl"></i>
+                    <i class="fas fa-peso-sign text-green-400 text-xl"></i>
                 </div>
             </div>
         </div>
@@ -120,7 +120,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-gray-400 text-sm font-medium">Total Profit</h3>
-                    <p class="text-2xl font-bold mt-1 text-food-gold">${{ total_profit|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold mt-1 text-food-gold">₱{{ total_profit|floatformat:2 }}</p>
                 </div>
                 <div class="bg-food-gold bg-opacity-20 p-3 rounded-full">
                     <i class="fas fa-chart-line text-food-gold text-xl"></i>
@@ -157,9 +157,9 @@
                     <tr class="border-b border-gray-800">
                         <td class="py-3">{{ day.date|date:"M d, Y" }}</td>
                         <td class="py-3">{{ day.quantity_sold }}</td>
-                        <td class="py-3">${{ day.revenue|floatformat:2 }}</td>
-                        <td class="py-3">${{ day.cost|floatformat:2 }}</td>
-                        <td class="py-3">${{ day.profit|floatformat:2 }}</td>
+                        <td class="py-3">₱{{ day.revenue|floatformat:2 }}</td>
+                        <td class="py-3">₱{{ day.cost|floatformat:2 }}</td>
+                        <td class="py-3">₱{{ day.profit|floatformat:2 }}</td>
                         <td class="py-3">
                             {% if day.revenue and day.revenue > 0 %}
                                 {% with margin=day.profit|div:day.revenue|mul:100 %}
@@ -203,8 +203,8 @@
                         <td class="py-3">{{ item.order.id }}</td>
                         <td class="py-3">{{ item.order.created_at|date:"M d, Y H:i" }}</td>
                         <td class="py-3">{{ item.quantity }}</td>
-                        <td class="py-3">${{ item.price }}</td>
-                        <td class="py-3">${{ item.subtotal }}</td>
+                        <td class="py-3">₱{{ item.price }}</td>
+                        <td class="py-3">₱{{ item.subtotal }}</td>
                         <td class="py-3">
                             {% if item.order.status == 'COMPLETED' %}
                             <span class="bg-green-900 text-green-300 text-xs px-2 py-1 rounded-full">Completed</span>

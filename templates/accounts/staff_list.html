@@ -16,7 +16,7 @@
                 <input type="text" name="q" id="q" value="{{ query }}" placeholder="Search by name, email, ID..."
                        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
             </div>
-            
+
             <div>
                 <label for="role" class="block text-sm font-medium text-gray-400 mb-2">Filter by Role</label>
                 <select name="role" id="role"
@@ -27,7 +27,7 @@
                     {% endfor %}
                 </select>
             </div>
-            
+
             <div class="flex gap-2">
                 <button type="submit" class="px-4 py-2 bg-food-gold hover:bg-food-gold-light text-white rounded-lg transition duration-200">
                     <i class="fas fa-search mr-2"></i> Search
@@ -52,7 +52,7 @@
     <!-- Staff List -->
     <div class="card p-6">
         <h2 class="text-xl font-bold mb-4">Staff Members</h2>
-        
+
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
@@ -68,6 +68,7 @@
                 </thead>
                 <tbody>
                     {% for user in staff_page %}
+                    {% if user.staff_profile.is_active_staff and user.staff_profile.role != 'CUSTOMER' %}
                     <tr class="border-b border-gray-800">
                         <td class="py-3">
                             <div class="flex items-center">
@@ -82,7 +83,7 @@
                         </td>
                         <td class="py-3">{{ user.staff_profile.employee_id|default:"-" }}</td>
                         <td class="py-3">
-                            <span class="px-2 py-1 rounded-full text-xs 
+                            <span class="px-2 py-1 rounded-full text-xs
                                 {% if user.staff_profile.role == 'ADMIN' %}bg-purple-900 text-purple-300
                                 {% elif user.staff_profile.role == 'MANAGER' %}bg-blue-900 text-blue-300
                                 {% elif user.staff_profile.role == 'CASHIER' %}bg-green-900 text-green-300
@@ -107,13 +108,14 @@
                                 <a href="{% url 'edit_staff' user.id %}" class="text-food-gold hover:text-food-gold-light" title="Edit Staff">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <button type="button" onclick="openResetPasswordModal({{ user.id }}, '{{ user.get_full_name }}')" 
+                                <button type="button" onclick="openResetPasswordModal({{ user.id }}, '{{ user.get_full_name }}')"
                                         class="text-blue-400 hover:text-blue-300" title="Reset Password">
                                     <i class="fas fa-key"></i>
                                 </button>
                             </div>
                         </td>
                     </tr>
+                    {% endif %}
                     {% empty %}
                     <tr>
                         <td colspan="7" class="py-4 text-center text-gray-500">No staff members found</td>
@@ -122,31 +124,31 @@
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Pagination -->
         {% if staff_page.has_other_pages %}
         <div class="flex justify-center mt-6">
             <div class="flex space-x-2">
                 {% if staff_page.has_previous %}
-                <a href="?page={{ staff_page.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" 
+                <a href="?page={{ staff_page.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
                    class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md">
                     <i class="fas fa-chevron-left"></i>
                 </a>
                 {% endif %}
-                
+
                 {% for num in staff_page.paginator.page_range %}
                     {% if staff_page.number == num %}
                     <span class="px-3 py-1 bg-food-gold text-white rounded-md">{{ num }}</span>
                     {% elif num > staff_page.number|add:'-3' and num < staff_page.number|add:'3' %}
-                    <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" 
+                    <a href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
                        class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md">
                         {{ num }}
                     </a>
                     {% endif %}
                 {% endfor %}
-                
+
                 {% if staff_page.has_next %}
-                <a href="?page={{ staff_page.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}" 
+                <a href="?page={{ staff_page.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
                    class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md">
                     <i class="fas fa-chevron-right"></i>
                 </a>
@@ -162,30 +164,30 @@
     <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md">
         <h3 class="text-xl font-bold mb-4">Reset Password</h3>
         <p class="mb-4">Enter a new password for <span id="staffName" class="font-semibold"></span>:</p>
-        
+
         <form id="resetPasswordForm" class="space-y-4">
             {% csrf_token %}
             <input type="hidden" id="staffId" name="staff_id">
-            
+
             <div>
                 <label for="new_password" class="block text-sm font-medium text-gray-400 mb-2">New Password</label>
                 <input type="password" id="new_password" name="new_password" required
                        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
             </div>
-            
+
             <div>
                 <label for="confirm_password" class="block text-sm font-medium text-gray-400 mb-2">Confirm Password</label>
                 <input type="password" id="confirm_password" name="confirm_password" required
                        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
                 <p id="passwordError" class="text-red-500 text-sm mt-1 hidden">Passwords do not match</p>
             </div>
-            
+
             <div class="flex justify-end space-x-3 pt-4">
-                <button type="button" onclick="closeResetPasswordModal()" 
+                <button type="button" onclick="closeResetPasswordModal()"
                         class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg">
                     Cancel
                 </button>
-                <button type="submit" 
+                <button type="submit"
                         class="px-4 py-2 bg-food-gold hover:bg-food-gold-light text-white rounded-lg">
                     Reset Password
                 </button>
@@ -205,27 +207,27 @@
         document.getElementById('confirm_password').value = '';
         document.getElementById('passwordError').classList.add('hidden');
     }
-    
+
     function closeResetPasswordModal() {
         document.getElementById('resetPasswordModal').classList.add('hidden');
     }
-    
+
     document.getElementById('resetPasswordForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         const newPassword = document.getElementById('new_password').value;
         const confirmPassword = document.getElementById('confirm_password').value;
         const staffId = document.getElementById('staffId').value;
-        
+
         // Check if passwords match
         if (newPassword !== confirmPassword) {
             document.getElementById('passwordError').classList.remove('hidden');
             return;
         }
-        
+
         // Hide error message
         document.getElementById('passwordError').classList.add('hidden');
-        
+
         // Send AJAX request to reset password
         fetch(`/dashboard/staff/${staffId}/reset-password/`, {
             method: 'POST',

@@ -1,0 +1,244 @@
+{% extends 'accounts/dashboard_base.html' %}
+
+{% block title %}Reservation #{{ reservation.id }} - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block page_title %}Reservation #{{ reservation.id }}{% endblock page_title %}
+{% block page_subtitle %}View reservation details{% endblock page_subtitle %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <a href="{% url 'reservations' %}" class="text-food-gold hover:text-food-gold-light">
+        <i class="fas fa-arrow-left mr-2"></i> Back to Reservations
+    </a>
+    
+    <div class="flex space-x-2">
+        <a href="#" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm">
+            <i class="fas fa-print mr-2"></i> Print
+        </a>
+        <a href="{% url 'update_reservation_status' reservation.id %}" class="bg-food-gold hover:bg-food-gold-light text-food-black px-4 py-2 rounded-lg text-sm">
+            <i class="fas fa-edit mr-2"></i> Update Status
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Reservation Details -->
+    <div class="md:col-span-2">
+        <div class="card p-6 shadow-lg border border-gray-800">
+            <div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-800">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Reservation Details</h2>
+                    <p class="text-gray-400 text-sm">Created on {{ reservation.created_at|date:"M d, Y" }} at {{ reservation.created_at|time:"H:i" }}</p>
+                </div>
+                <div>
+                    {% if reservation.status == 'PENDING' %}
+                    <span class="bg-yellow-900 text-yellow-300 text-xs px-2 py-1 rounded-full">Pending</span>
+                    {% elif reservation.status == 'CONFIRMED' %}
+                    <span class="bg-blue-900 text-blue-300 text-xs px-2 py-1 rounded-full">Confirmed</span>
+                    {% elif reservation.status == 'COMPLETED' %}
+                    <span class="bg-green-900 text-green-300 text-xs px-2 py-1 rounded-full">Completed</span>
+                    {% elif reservation.status == 'CANCELLED' %}
+                    <span class="bg-red-900 text-red-300 text-xs px-2 py-1 rounded-full">Cancelled</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-3">Guest Information</h3>
+                    <div class="space-y-2">
+                        <div class="flex">
+                            <span class="text-gray-400 w-24">Name:</span>
+                            <span class="text-white font-medium">{{ reservation.name }}</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-gray-400 w-24">Email:</span>
+                            <span class="text-white">{{ reservation.email }}</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-gray-400 w-24">Phone:</span>
+                            <span class="text-white">{{ reservation.phone }}</span>
+                        </div>
+                        {% if reservation.user %}
+                        <div class="flex">
+                            <span class="text-gray-400 w-24">User:</span>
+                            <span class="text-white">{{ reservation.user.username }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-3">Reservation Information</h3>
+                    <div class="space-y-2">
+                        <div class="flex">
+                            <span class="text-gray-400 w-24">Date:</span>
+                            <span class="text-white font-medium">{{ reservation.date|date:"F d, Y" }}</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-gray-400 w-24">Time:</span>
+                            <span class="text-white font-medium">{{ reservation.time|time:"h:i A" }}</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-gray-400 w-24">Party Size:</span>
+                            <span class="text-white">{{ reservation.party_size }} people</span>
+                        </div>
+                        {% if reservation.table_number %}
+                        <div class="flex">
+                            <span class="text-gray-400 w-24">Table:</span>
+                            <span class="text-white">{{ reservation.table_number }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if reservation.special_requests %}
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-white mb-3">Special Requests</h3>
+                <div class="bg-gray-800 p-4 rounded-lg">
+                    <p class="text-gray-300">{{ reservation.special_requests }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if reservation.has_menu_items %}
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-white mb-3">Pre-ordered Menu Items</h3>
+                {% if reservation_items %}
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="text-left text-gray-400 border-b border-gray-800">
+                                <th class="pb-3">Item</th>
+                                <th class="pb-3">Quantity</th>
+                                <th class="pb-3">Price</th>
+                                <th class="pb-3">Subtotal</th>
+                                <th class="pb-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in reservation_items %}
+                            <tr class="border-b border-gray-800">
+                                <td class="py-3 text-white">{{ item.menu_item.name }}</td>
+                                <td class="py-3 text-gray-400">{{ item.quantity }}</td>
+                                <td class="py-3 text-gray-400">₱{{ item.price }}</td>
+                                <td class="py-3 text-white">₱{{ item.subtotal }}</td>
+                                <td class="py-3">
+                                    {% if item.is_prepared %}
+                                    <span class="bg-green-900 text-green-300 text-xs px-2 py-1 rounded-full">Prepared</span>
+                                    {% else %}
+                                    <span class="bg-yellow-900 text-yellow-300 text-xs px-2 py-1 rounded-full">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="py-3 text-right text-gray-400 font-semibold">Total:</td>
+                                <td class="py-3 text-food-gold font-bold">₱{{ reservation.total_amount }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-gray-400">No menu items have been pre-ordered.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div>
+        <!-- Payment Status -->
+        <div class="card p-6 shadow-lg border border-gray-800 mb-6">
+            <h3 class="text-lg font-semibold text-white mb-3">Payment Status</h3>
+            <div class="flex items-center mb-4">
+                <div class="w-3 h-3 rounded-full mr-2 
+                    {% if reservation.payment_status == 'PAID' %}bg-green-500
+                    {% elif reservation.payment_status == 'PARTIALLY_PAID' %}bg-yellow-500
+                    {% elif reservation.payment_status == 'UNPAID' %}bg-red-500
+                    {% elif reservation.payment_status == 'REFUNDED' %}bg-blue-500{% endif %}">
+                </div>
+                <span class="text-white">{{ reservation.get_payment_status_display }}</span>
+            </div>
+            
+            {% if reservation.total_amount > 0 %}
+            <div class="flex justify-between mb-2">
+                <span class="text-gray-400">Total Amount:</span>
+                <span class="text-white font-medium">₱{{ reservation.total_amount }}</span>
+            </div>
+            {% endif %}
+            
+            {% if payments %}
+            <div class="mt-4">
+                <h4 class="text-white font-medium mb-2">Payment History</h4>
+                <div class="space-y-3">
+                    {% for payment in payments %}
+                    <div class="bg-gray-800 p-3 rounded-lg">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-gray-400 text-sm">{{ payment.payment_date|date:"M d, Y" }}</span>
+                            <span class="text-xs 
+                                {% if payment.status == 'COMPLETED' %}text-green-400
+                                {% elif payment.status == 'PENDING' %}text-yellow-400
+                                {% elif payment.status == 'FAILED' %}text-red-400
+                                {% elif payment.status == 'REFUNDED' %}text-blue-400{% endif %}">
+                                {{ payment.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-white">{{ payment.get_payment_method_display }}</span>
+                            <span class="text-white font-medium">₱{{ payment.amount }}</span>
+                        </div>
+                        {% if payment.reference_number %}
+                        <div class="text-gray-400 text-xs mt-1">Ref: {{ payment.reference_number }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Processing Status -->
+        <div class="card p-6 shadow-lg border border-gray-800">
+            <h3 class="text-lg font-semibold text-white mb-3">Processing Status</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Processed:</span>
+                    <span class="text-white">
+                        {% if reservation.is_processed %}
+                        <i class="fas fa-check-circle text-green-500 mr-1"></i> Yes
+                        {% else %}
+                        <i class="fas fa-times-circle text-red-500 mr-1"></i> No
+                        {% endif %}
+                    </span>
+                </div>
+                
+                {% if reservation.is_processed and reservation.processed_by %}
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Processed By:</span>
+                    <span class="text-white">{{ reservation.processed_by.get_full_name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Processed At:</span>
+                    <span class="text-white">{{ reservation.processed_at|date:"M d, Y H:i" }}</span>
+                </div>
+                {% endif %}
+                
+                {% if reservation.prepare_ahead %}
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Prepare Ahead:</span>
+                    <span class="text-white">
+                        <i class="fas fa-check-circle text-green-500 mr-1"></i> Yes
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

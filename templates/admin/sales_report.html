@@ -161,10 +161,10 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-gray-400 text-sm font-medium">Total Revenue</h3>
-                        <p class="text-2xl font-bold mt-1 text-green-400">${{ total_revenue|floatformat:2 }}</p>
+                        <p class="text-2xl font-bold mt-1 text-green-400">₱{{ total_revenue|floatformat:2 }}</p>
                     </div>
                     <div class="bg-green-900 p-3 rounded-full">
-                        <i class="fas fa-dollar-sign text-green-400 text-xl"></i>
+                        <i class="fas fa-peso-sign text-green-400 text-xl"></i>
                     </div>
                 </div>
             </div>
@@ -173,7 +173,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-gray-400 text-sm font-medium">Total Profit</h3>
-                        <p class="text-2xl font-bold mt-1 text-blue-400">${{ total_profit|floatformat:2 }}</p>
+                        <p class="text-2xl font-bold mt-1 text-blue-400">₱{{ total_profit|floatformat:2 }}</p>
                     </div>
                     <div class="bg-blue-900 p-3 rounded-full">
                         <i class="fas fa-chart-line text-blue-400 text-xl"></i>
@@ -197,7 +197,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-gray-400 text-sm font-medium">Avg. Order Value</h3>
-                        <p class="text-2xl font-bold mt-1 text-yellow-400">${{ avg_order_value|floatformat:2 }}</p>
+                        <p class="text-2xl font-bold mt-1 text-yellow-400">₱{{ avg_order_value|floatformat:2 }}</p>
                     </div>
                     <div class="bg-yellow-900 p-3 rounded-full">
                         <i class="fas fa-receipt text-yellow-400 text-xl"></i>
@@ -220,7 +220,7 @@
             <div class="bg-gray-800 p-4 rounded-lg">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-gray-400 text-sm font-medium">Cost vs Revenue</h3>
-                    <p class="text-sm font-medium text-gray-400">Cost: ${{ total_cost|floatformat:2 }}</p>
+                    <p class="text-sm font-medium text-gray-400">Cost: ₱{{ total_cost|floatformat:2 }}</p>
                 </div>
                 <div class="w-full bg-gray-700 rounded-full h-2.5">
                     <div class="bg-red-500 h-2.5 rounded-full" style="width: {{ total_cost|div:total_revenue|mul:100 }}%"></div>
@@ -266,7 +266,7 @@
                         {% for category in category_sales %}
                         <tr class="border-b border-gray-800">
                             <td class="py-3">{{ category.menu_item__category__name|default:"No Category" }}</td>
-                            <td class="py-3">${{ category.revenue|floatformat:2 }}</td>
+                            <td class="py-3">₱{{ category.revenue|floatformat:2 }}</td>
                             <td class="py-3">{{ category.quantity }}</td>
                             <td class="py-3">{{ category.revenue|percentage:total_revenue|floatformat:1 }}%</td>
                         </tr>
@@ -486,7 +486,7 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return '$' + context.raw.toFixed(2);
+                                return '₱' + context.raw.toFixed(2);
                             }
                         }
                     }
@@ -550,7 +550,7 @@
                                 const value = context.raw;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = ((value / total) * 100).toFixed(1);
-                                return `$${value.toFixed(2)} (${percentage}%)`;
+                                return `₱${value.toFixed(2)} (${percentage}%)`;
                             }
                         }
                     }
@@ -648,7 +648,7 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return '$' + context.raw.toFixed(2);
+                                return '₱' + context.raw.toFixed(2);
                             }
                         }
                     }
@@ -662,7 +662,7 @@
                         ticks: {
                             color: '#E5E7EB',
                             callback: function(value) {
-                                return '$' + value.toFixed(2);
+                                return '₱' + value.toFixed(2);
                             }
                         }
                     },

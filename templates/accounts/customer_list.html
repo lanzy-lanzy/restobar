@@ -13,7 +13,7 @@
         <form method="get" class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-4">
             <div class="flex-grow">
                 <div class="relative">
-                    <input type="text" name="q" value="{{ query }}" placeholder="Search customers..." 
+                    <input type="text" name="q" value="{{ query }}" placeholder="Search customers..."
                            class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-2 pl-10 focus:outline-none focus:border-food-gold">
                     <div class="absolute left-3 top-2.5 text-gray-400">
                         <i class="fas fa-search"></i>
@@ -43,7 +43,7 @@
                 Showing {{ customer_page.start_index }} to {{ customer_page.end_index }} of {{ customer_page.paginator.count }} customers
             </div>
         </div>
-        
+
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
@@ -59,20 +59,41 @@
                 </thead>
                 <tbody>
                     {% for user in customer_page %}
+                    {% if user.customer_profile and not user.is_staff and not user.is_superuser %}
                     <tr class="border-b border-gray-800 {% if user.customer_profile.is_blacklisted %}bg-red-900/20{% endif %}">
                         <td class="py-3 pl-4">
                             <div class="flex items-center">
+                                {% if user.customer_profile.profile_picture %}
+                                <div class="w-10 h-10 rounded-full overflow-hidden mr-3">
+                                    <img src="{{ user.customer_profile.profile_picture.url }}" alt="{{ user.get_full_name }}" class="w-full h-full object-cover">
+                                </div>
+                                {% else %}
                                 <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 mr-3">
                                     {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
                                 </div>
+                                {% endif %}
                                 <div>
                                     <div class="font-medium">{{ user.get_full_name }}</div>
                                     <div class="text-sm text-gray-400">@{{ user.username }}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-3">{{ user.email }}</td>
-                        <td class="py-3">{{ user.customer_profile.phone|default:"-" }}</td>
+                        <td class="py-3">
+                            <div class="flex items-center">
+                                <i class="fas fa-envelope text-gray-500 mr-2"></i>
+                                <span>{{ user.email }}</span>
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            {% if user.customer_profile.phone %}
+                            <div class="flex items-center">
+                                <i class="fas fa-phone text-gray-500 mr-2"></i>
+                                <span>{{ user.customer_profile.phone }}</span>
+                            </div>
+                            {% else %}
+                            <span class="text-gray-500">-</span>
+                            {% endif %}
+                        </td>
                         <td class="py-3">{{ user.order_count }}</td>
                         <td class="py-3">${{ user.total_spent|floatformat:2 }}</td>
                         <td class="py-3">
@@ -90,6 +111,7 @@
                             </div>
                         </td>
                     </tr>
+                    {% endif %}
                     {% empty %}
                     <tr>
                         <td colspan="7" class="py-4 text-center text-gray-500">No customers found</td>
@@ -98,31 +120,31 @@
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Pagination -->
         {% if customer_page.has_other_pages %}
         <div class="p-4 border-t border-gray-700 flex justify-center">
             <div class="flex space-x-1">
                 {% if customer_page.has_previous %}
-                <a href="?page={{ customer_page.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if blacklist_filter %}&blacklist={{ blacklist_filter }}{% endif %}" 
+                <a href="?page={{ customer_page.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if blacklist_filter %}&blacklist={{ blacklist_filter }}{% endif %}"
                    class="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition duration-300">
                     <i class="fas fa-chevron-left"></i>
                 </a>
                 {% endif %}
-                
+
                 {% for i in customer_page.paginator.page_range %}
                     {% if customer_page.number == i %}
                     <span class="px-3 py-1 bg-food-gold text-gray-900 font-bold rounded">{{ i }}</span>
                     {% elif i > customer_page.number|add:"-3" and i < customer_page.number|add:"3" %}
-                    <a href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}{% if blacklist_filter %}&blacklist={{ blacklist_filter }}{% endif %}" 
+                    <a href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}{% if blacklist_filter %}&blacklist={{ blacklist_filter }}{% endif %}"
                        class="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition duration-300">
                         {{ i }}
                     </a>
                     {% endif %}
                 {% endfor %}
-                
+
                 {% if customer_page.has_next %}
-                <a href="?page={{ customer_page.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if blacklist_filter %}&blacklist={{ blacklist_filter }}{% endif %}" 
+                <a href="?page={{ customer_page.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if blacklist_filter %}&blacklist={{ blacklist_filter }}{% endif %}"
                    class="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition duration-300">
                     <i class="fas fa-chevron-right"></i>
                 </a>

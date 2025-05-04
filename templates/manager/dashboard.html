@@ -26,7 +26,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-gray-400 text-sm font-medium">Weekly Sales</h3>
-                    <p class="text-2xl font-bold mt-1 text-blue-400">${{ week_sales|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold mt-1 text-blue-400">₱{{ week_sales|floatformat:2 }}</p>
                 </div>
                 <div class="bg-blue-900 p-3 rounded-full">
                     <i class="fas fa-calendar-week text-blue-400 text-xl"></i>
@@ -38,7 +38,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-gray-400 text-sm font-medium">Monthly Sales</h3>
-                    <p class="text-2xl font-bold mt-1 text-purple-400">${{ month_sales|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold mt-1 text-purple-400">₱{{ month_sales|floatformat:2 }}</p>
                 </div>
                 <div class="bg-purple-900 p-3 rounded-full">
                     <i class="fas fa-calendar-alt text-purple-400 text-xl"></i>

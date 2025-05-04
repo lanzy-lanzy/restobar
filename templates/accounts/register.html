@@ -122,10 +122,38 @@
         <!-- Include Messages Component -->
         {% include 'components/messages/messages.html' %}
 
-        <form class="mt-8 space-y-6 fade-in delay-200" method="POST">
+        <form class="mt-8 space-y-6 fade-in delay-200" method="POST" enctype="multipart/form-data">
             {% csrf_token %}
 
             <div class="rounded-md shadow-sm -space-y-px">
+                <!-- Profile Picture -->
+                <div class="mb-6">
+                    <label for="{{ form.profile_picture.id_for_label|default:'id_profile_picture' }}" class="block text-sm font-medium text-gray-400 mb-1">Profile Picture <span class="text-red-500">*</span></label>
+                    <div class="flex flex-col items-center space-y-4">
+                        <!-- Preview container -->
+                        <div id="profile-preview-container" class="w-24 h-24 rounded-full bg-gray-700 flex items-center justify-center text-food-gold text-3xl border-2 border-gray-600 overflow-hidden">
+                            <i class="fas fa-user"></i>
+                        </div>
+
+                        <!-- Upload button -->
+                        <div class="w-full">
+                            <div class="flex items-center justify-center w-full">
+                                <label for="profile_picture" class="flex flex-col items-center justify-center w-full py-3 px-4 bg-gray-700 border border-gray-600 rounded-md cursor-pointer hover:bg-gray-600 transition-colors duration-200">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-cloud-upload-alt text-yellow-500 text-lg mr-2"></i>
+                                        <span class="text-sm text-gray-300">Choose a profile picture (required)</span>
+                                    </div>
+                                    <input id="profile_picture" name="profile_picture" type="file" class="hidden" accept="image/*" required />
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1 text-center">Recommended: Square image (JPG, PNG)</p>
+                        </div>
+                    </div>
+                    {% if form.profile_picture.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.profile_picture.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
                 <!-- Username -->
                 <div class="mb-4">
                     <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-1">Username</label>
@@ -192,13 +220,22 @@
 
                 <!-- Phone -->
                 <div class="mb-4">
-                    <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-1">Phone (optional)</label>
+                    <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-1">Phone <span class="text-red-500">*</span></label>
                     <div class="flex items-center relative bg-gray-700 border border-gray-600 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-yellow-500 focus-within:border-yellow-500">
                         <div class="px-3 py-3 bg-gray-600 flex items-center justify-center">
                             <i class="fas fa-phone text-yellow-500 text-lg"></i>
                         </div>
                         <div class="w-full">
                             {{ form.phone }}
+                            <script>
+                                // Add required attribute to phone field
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const phoneField = document.getElementById('{{ form.phone.id_for_label }}');
+                                    if (phoneField) {
+                                        phoneField.setAttribute('required', 'required');
+                                    }
+                                });
+                            </script>
                         </div>
                     </div>
                     {% if form.phone.errors %}
@@ -339,6 +376,58 @@
 <script>
     // Enhanced animations and form handling
     document.addEventListener('DOMContentLoaded', function() {
+        // Profile picture preview
+        const profilePictureInput = document.getElementById('profile_picture');
+        const previewContainer = document.getElementById('profile-preview-container');
+
+        if (profilePictureInput && previewContainer) {
+            profilePictureInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        // Clear the container
+                        previewContainer.innerHTML = '';
+
+                        // Create image element
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.classList.add('w-full', 'h-full', 'object-cover');
+
+                        // Add image to container
+                        previewContainer.appendChild(img);
+
+                        // Remove error styling and hide error message
+                        previewContainer.classList.remove('border-red-500');
+                        const errorMsg = document.querySelector('.profile-picture-error');
+                        if (errorMsg) {
+                            errorMsg.classList.add('hidden');
+                        }
+                    };
+
+                    reader.readAsDataURL(file);
+                } else {
+                    // Reset to default icon if no file selected
+                    previewContainer.innerHTML = '<i class="fas fa-user"></i>';
+
+                    // Add error styling and show error message if required
+                    if (this.required) {
+                        previewContainer.classList.add('border-red-500');
+                        let errorMsg = document.querySelector('.profile-picture-error');
+                        if (!errorMsg) {
+                            errorMsg = document.createElement('p');
+                            errorMsg.classList.add('text-red-500', 'text-xs', 'mt-1', 'text-center', 'profile-picture-error');
+                            errorMsg.textContent = 'Profile picture is required';
+                            previewContainer.parentElement.appendChild(errorMsg);
+                        } else {
+                            errorMsg.classList.remove('hidden');
+                        }
+                    }
+                }
+            });
+        }
+
         // Staggered fade-in animation for elements
         const fadeElements = document.querySelectorAll('.fade-in');
         fadeElements.forEach((el, index) => {
@@ -425,6 +514,40 @@
         // Validate form fields
         function validateForm() {
             let isValid = true;
+
+            // Check profile picture
+            const profilePictureInput = document.getElementById('profile_picture');
+            if (profilePictureInput && profilePictureInput.required && !profilePictureInput.files.length) {
+                isValid = false;
+
+                // Show error message for profile picture
+                const previewContainer = document.getElementById('profile-preview-container');
+                if (previewContainer) {
+                    previewContainer.classList.add('border-red-500');
+
+                    // Create or show error message
+                    let errorMsg = document.querySelector('.profile-picture-error');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('p');
+                        errorMsg.classList.add('text-red-500', 'text-xs', 'mt-1', 'text-center', 'profile-picture-error');
+                        errorMsg.textContent = 'Profile picture is required';
+                        previewContainer.parentElement.appendChild(errorMsg);
+                    } else {
+                        errorMsg.classList.remove('hidden');
+                    }
+                }
+            } else if (profilePictureInput && profilePictureInput.files.length) {
+                // Hide error message if picture is selected
+                const previewContainer = document.getElementById('profile-preview-container');
+                if (previewContainer) {
+                    previewContainer.classList.remove('border-red-500');
+
+                    const errorMsg = document.querySelector('.profile-picture-error');
+                    if (errorMsg) {
+                        errorMsg.classList.add('hidden');
+                    }
+                }
+            }
 
             // Check required fields
             requiredFields.forEach(field => {

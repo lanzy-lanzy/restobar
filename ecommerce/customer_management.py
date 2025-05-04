@@ -26,19 +26,15 @@ def customer_list(request):
     blacklist_filter = request.GET.get('blacklist', '')
 
     # Base queryset - only get regular users (not staff)
+    # Exclude users with active staff profiles or admin roles
     customers = User.objects.filter(
         is_staff=False,
         is_superuser=False
+    ).exclude(
+        staff_profile__is_active_staff=True
     )
 
-    # Apply search filter if provided
-    if query:
-        customers = customers.filter(
-            Q(username__icontains=query) |
-            Q(first_name__icontains=query) |
-            Q(last_name__icontains=query) |
-            Q(email__icontains=query)
-        )
+    # We'll apply the search filter after refreshing the queryset
 
     # Get list of users that have customer profiles
     users_with_profiles = list(CustomerProfile.objects.values_list('user_id', flat=True))
@@ -46,11 +42,19 @@ def customer_list(request):
     # Create profiles for users that don't have them
     for customer in customers:
         if customer.id not in users_with_profiles:
+            # Create a new profile
             CustomerProfile.objects.create(user=customer)
             messages.info(request, f"Created missing profile for user {customer.username}")
 
     # Now we can safely use select_related and filter by profile
-    customers = customers.select_related('customer_profile')
+    # Force a refresh of the queryset to ensure we get the latest data
+    # Use a direct query instead of filtering by the previous queryset to ensure fresh data
+    customers = User.objects.filter(
+        is_staff=False,
+        is_superuser=False
+    ).exclude(
+        staff_profile__is_active_staff=True
+    ).select_related('customer_profile')
 
     # Apply blacklist filter if provided
     if blacklist_filter:
