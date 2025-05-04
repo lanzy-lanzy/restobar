@@ -101,15 +101,15 @@ class GCashPaymentForm(forms.ModelForm):
 class ReservationPaymentForm(forms.ModelForm):
     """Form for reservation payment"""
     PAYMENT_TYPE_CHOICES = [
-        ('FULL', 'Full Payment'),
-        ('DEPOSIT', 'Deposit (50%)')
+        ('DEPOSIT', 'Downpayment (50%)'),
+        ('FULL', 'Full Payment (100%)')
     ]
 
     payment_type = forms.ChoiceField(
         choices=PAYMENT_TYPE_CHOICES,
         widget=forms.RadioSelect,
         initial='DEPOSIT',
-        help_text="Choose whether to pay the full amount or a 50% deposit"
+        help_text="Choose whether to pay the full amount or a 50% downpayment"
     )
     reference_number = forms.CharField(
         max_length=100,
@@ -124,6 +124,11 @@ class ReservationPaymentForm(forms.ModelForm):
     class Meta:
         model = ReservationPayment
         fields = ('payment_type', 'reference_number', 'payment_proof')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set default payment type to DEPOSIT (50%)
+        self.initial['payment_type'] = 'DEPOSIT'
 
 
 class ReservationForm(forms.ModelForm):

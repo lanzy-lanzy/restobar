@@ -143,7 +143,7 @@
                                 </h3>
                                 <div class="flex justify-center mb-4">
                                     <div class="bg-white p-3 rounded-lg">
-                                        <img src="/static/images/gcash_qr.png" alt="GCash QR Code" class="w-48 h-48 object-contain">
+                                        <img src="/static/images/qrcode.png" alt="GCash QR Code" class="w-48 h-48 object-contain">
                                     </div>
                                 </div>
                                 <p class="text-gray-400 text-sm text-center">Scan this QR code with your GCash app to pay</p>
@@ -191,11 +191,27 @@
                             <!-- Payment Type Selection -->
                             <div class="form-group mb-6">
                                 <label for="{{ form.payment_type.id_for_label }}" class="block text-white font-medium mb-2">Payment Type</label>
-                                <div class="space-y-2">
+                                <div class="bg-yellow-900/30 border border-yellow-800 rounded-lg p-4 mb-4">
+                                    <div class="flex items-start">
+                                        <i class="fas fa-info-circle text-yellow-400 mt-1 mr-2"></i>
+                                        <div>
+                                            <h4 class="text-white font-medium mb-1">Payment Options</h4>
+                                            <p class="text-gray-300 text-sm">A minimum 50% downpayment (₱{{ deposit_amount|floatformat:2 }}) is required to secure your reservation with pre-ordered items. You can also choose to pay the full amount (₱{{ reservation.total_amount|floatformat:2 }}) now.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-3 bg-gray-800 p-4 rounded-lg">
                                     {% for radio in form.payment_type %}
                                     <div class="flex items-center">
                                         {{ radio.tag }}
-                                        <label for="{{ radio.id_for_label }}" class="ml-2 text-white">{{ radio.choice_label }}</label>
+                                        <label for="{{ radio.id_for_label }}" class="ml-2 text-white">
+                                            {{ radio.choice_label }}
+                                            {% if radio.choice_value == 'DEPOSIT' %}
+                                                <span class="text-food-gold ml-2">(₱{{ deposit_amount|floatformat:2 }})</span>
+                                            {% elif radio.choice_value == 'FULL' %}
+                                                <span class="text-food-gold ml-2">(₱{{ reservation.total_amount|floatformat:2 }})</span>
+                                            {% endif %}
+                                        </label>
                                     </div>
                                     {% endfor %}
                                 </div>

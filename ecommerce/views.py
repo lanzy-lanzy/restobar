@@ -1381,6 +1381,9 @@ def reservation_payment(request, reservation_id):
         else:
             form = ReservationPaymentForm(instance=payment)
 
+        # Calculate deposit amount (50% of total)
+        deposit_amount = reservation.total_amount * Decimal('0.5')
+
         # Return the template with context
         return render(request, 'reservations/reservation_payment.html', {
             'reservation': reservation,
@@ -1388,7 +1391,8 @@ def reservation_payment(request, reservation_id):
             'form': form,
             'reservation_items': reservation_items,
             'has_menu_items': has_menu_items,
-            'menu_items_total': menu_items_total
+            'menu_items_total': menu_items_total,
+            'deposit_amount': deposit_amount
         })
     except Reservation.DoesNotExist:
         messages.error(request, 'Reservation not found.')

@@ -214,6 +214,12 @@
                             <span class="ml-2 text-white">Pre-order menu items with your reservation</span>
                         </label>
                         <p class="text-gray-400 text-sm mt-1 ml-7">Select menu items to have ready when you arrive</p>
+                        <div class="mt-2 p-3 bg-yellow-900/30 border border-yellow-800 rounded-lg ml-7">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-yellow-400 mt-1 mr-2"></i>
+                                <p class="text-gray-300 text-sm"><strong>Note:</strong> Reservations with pre-ordered items require at least a 50% downpayment to secure your table. You can choose to pay either 50% now or the full amount. Any remaining balance can be paid upon arrival.</p>
+                            </div>
+                        </div>
 
                         <!-- Menu Items Selection (shown when toggle is on) -->
                         <div x-show="hasMenuItems" class="mt-4 p-6 bg-gray-800 rounded-lg border border-gray-700"
@@ -313,7 +319,7 @@
                 <div class="mt-4 p-4 bg-gray-900 rounded-lg border border-gray-700">
                     <div class="flex items-center text-gray-400">
                         <i class="fas fa-info-circle text-food-gold mr-2"></i>
-                        <p class="text-sm">After submitting your reservation, you'll need manager approval. If you've pre-ordered menu items, you'll be redirected to our payment page where you can choose to pay the full amount or a 50% deposit to secure your reservation. Table-only reservations are free and don't require payment.</p>
+                        <p class="text-sm">After submitting your reservation, you'll need manager approval. If you've pre-ordered menu items, you'll be redirected to our payment page where you <strong>must pay at least a 50% downpayment</strong> to secure your reservation. You can choose to pay the full amount now or pay the remaining balance upon arrival. Table-only reservations are free and don't require payment.</p>
                     </div>
                 </div>
             </form>
