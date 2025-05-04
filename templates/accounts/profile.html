@@ -20,10 +20,10 @@
                     {% endif %}
                 </div>
                 <div>
-                    <label for="profile_picture" class="block text-sm font-medium text-gray-400 mb-2">Profile Picture</label>
+                    <label for="profile_picture" class="block text-sm font-medium text-gray-400 mb-2">Profile Picture <span class="text-red-500">*</span></label>
                     <input type="file" name="profile_picture" id="profile_picture" accept="image/*"
                            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold text-gray-300">
-                    <p class="text-xs text-gray-500 mt-1">Upload a new profile picture (JPG, PNG)</p>
+                    <p class="text-xs text-gray-500 mt-1">Upload a new profile picture (JPG, PNG). Required field.</p>
                 </div>
             </div>
 
@@ -50,10 +50,11 @@
                 </div>
 
                 <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-400 mb-2">Phone</label>
-                    <input type="tel" name="phone" id="phone"
+                    <label for="phone" class="block text-sm font-medium text-gray-400 mb-2">Phone <span class="text-red-500">*</span></label>
+                    <input type="tel" name="phone" id="phone" required
                            value="{{ request.user.customer_profile.phone|default:'' }}"
                            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                    <p class="text-xs text-gray-500 mt-1">Phone number is required.</p>
                 </div>
             </div>
 

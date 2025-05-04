@@ -17,8 +17,13 @@ def staff_list(request):
     query = request.GET.get('q', '')
     role_filter = request.GET.get('role', '')
 
-    # Base queryset
-    staff_users = User.objects.filter(staff_profile__isnull=False).select_related('staff_profile')
+    # Base queryset - only get actual staff members (not customers)
+    staff_users = User.objects.filter(
+        staff_profile__isnull=False,
+        staff_profile__is_active_staff=True
+    ).exclude(
+        staff_profile__role='CUSTOMER'
+    ).select_related('staff_profile')
 
     # Apply filters
     if query:

@@ -111,15 +111,15 @@
                             </a>
                         </td>
                         {% endif %}
-                        <td class="py-3">${{ record.old_price }}</td>
-                        <td class="py-3">${{ record.new_price }}</td>
+                        <td class="py-3">₱{{ record.old_price }}</td>
+                        <td class="py-3">₱{{ record.new_price }}</td>
                         <td class="py-3 {% if record.new_price > record.old_price %}text-green-400{% elif record.new_price < record.old_price %}text-red-400{% else %}text-gray-400{% endif %}">
                             {% if record.new_price > record.old_price %}
-                                +${{ record.new_price|sub:record.old_price|floatformat:2 }}
+                                +₱{{ record.new_price|sub:record.old_price|floatformat:2 }}
                             {% elif record.new_price < record.old_price %}
-                                -${{ record.old_price|sub:record.new_price|floatformat:2 }}
+                                -₱{{ record.old_price|sub:record.new_price|floatformat:2 }}
                             {% else %}
-                                $0.00
+                                ₱0.00
                             {% endif %}
                         </td>
                         <td class="py-3 {% if record.new_price > record.old_price %}text-green-400{% elif record.new_price < record.old_price %}text-red-400{% else %}text-gray-400{% endif %}">

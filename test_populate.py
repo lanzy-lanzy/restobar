@@ -48,7 +48,7 @@ print(f"- {category.name}: {category.description}")
 
 print("\nSample Menu Items:")
 for item in MenuItem.objects.filter(category=category)[:3]:
-    print(f"- {item.name}: ${item.price} - {item.description[:50]}...")
+    print(f"- {item.name}: ₱{item.price} - {item.description[:50]}...")
 
 print("\nSample Reservation:")
 reservation = Reservation.objects.first()
@@ -56,10 +56,10 @@ print(f"- {reservation.name} on {reservation.date} at {reservation.time} for {re
 
 print("\nSample Order:")
 order = Order.objects.first()
-print(f"- Order #{order.id} by {order.user.username} for ${order.total_amount} ({order.status})")
+print(f"- Order #{order.id} by {order.user.username} for ₱{order.total_amount} ({order.status})")
 print("  Items:")
 for item in order.order_items.all()[:3]:
-    print(f"  - {item.quantity}x {item.menu_item.name} (${item.price})")
+    print(f"  - {item.quantity}x {item.menu_item.name} (₱{item.price})")
 
 print("\nSample Review:")
 review = Review.objects.first()

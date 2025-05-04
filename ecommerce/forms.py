@@ -9,8 +9,11 @@ class RegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     first_name = forms.CharField(max_length=30, required=True)
     last_name = forms.CharField(max_length=30, required=True)
-    phone = forms.CharField(max_length=20, required=False)
+    phone = forms.CharField(max_length=20, required=True,
+                           help_text="Required. Please provide a valid phone number.")
     address = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), required=False)
+    profile_picture = forms.ImageField(required=True,
+                                     help_text="Required. Please upload a profile picture.")
 
     class Meta:
         model = User
@@ -25,13 +28,6 @@ class RegistrationForm(UserCreationForm):
 
         if commit:
             user.save()
-
-            # Make sure the customer profile exists and update it
-            from .models import CustomerProfile
-            profile, created = CustomerProfile.objects.get_or_create(user=user)
-            profile.phone = self.cleaned_data.get('phone', '')
-            profile.address = self.cleaned_data.get('address', '')
-            profile.save()
 
         return user
 
