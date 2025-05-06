@@ -302,6 +302,10 @@
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-food-gold/20 text-food-gold border border-food-gold/30">
                                             <i class="fas fa-utensils mr-1"></i> Pre-ordered
                                         </span>
+                                        {% elif reservation.has_placed_order %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-800/30 text-blue-300 border border-blue-800/30">
+                                            <i class="fas fa-shopping-cart mr-1"></i> Placed Order
+                                        </span>
                                         {% endif %}
                                         {% if reservation.prepare_ahead %}
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-800/30 text-yellow-300 border border-yellow-800/30">
