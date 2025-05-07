@@ -1,0 +1,419 @@
+{% extends 'manager/base.html' %}
+{% load math_filters custom_filters %}
+
+{% block title %}Export Sales Report - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block page_title %}Export Sales Report{% endblock page_title %}
+{% block page_subtitle %}Generate and export detailed sales reports with custom filters{% endblock page_subtitle %}
+
+{% block extra_css %}
+<style>
+    /* Enhanced fix for dropdown display issues */
+    select {
+        appearance: auto !important;
+        -webkit-appearance: auto !important;
+        -moz-appearance: auto !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: relative !important;
+        z-index: 10 !important;
+    }
+
+    /* Ensure dropdown options are visible */
+    select option {
+        background-color: #374151;
+        color: white;
+        padding: 8px;
+        display: block !important;
+    }
+
+    /* Fix for dropdown container */
+    .dropdown-container {
+        position: relative;
+        width: 100%;
+    }
+
+    /* Make sure the dropdown arrow is visible */
+    select::-ms-expand {
+        display: block !important;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Filters -->
+    <div class="card p-6">
+        <h3 class="text-lg font-semibold mb-4">Report Options</h3>
+        <form method="GET" class="space-y-6" id="reportForm">
+            <!-- Date and Period Selection -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="date_from" class="block text-sm font-medium text-gray-400 mb-2">Date From</label>
+                    <input type="date" name="date_from" id="date_from" value="{{ date_from }}"
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                </div>
+                <div>
+                    <label for="date_to" class="block text-sm font-medium text-gray-400 mb-2">Date To</label>
+                    <input type="date" name="date_to" id="date_to" value="{{ date_to }}"
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                </div>
+                <div>
+                    <label for="report_type" class="block text-sm font-medium text-gray-400 mb-2">Report Type</label>
+                    <select name="report_type" id="report_type"
+                            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                        <option value="daily" {% if report_type == 'daily' %}selected{% endif %}>Daily</option>
+                        <option value="monthly" {% if report_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                        <option value="yearly" {% if report_type == 'yearly' %}selected{% endif %}>Yearly</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Cashier and Payment Method Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="dropdown-container">
+                    <label for="cashier" class="block text-sm font-medium text-gray-400 mb-2">Cashier</label>
+                    <select name="cashier" id="cashier"
+                            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                        <option value="">All Cashiers</option>
+                        {% for cashier in cashiers %}
+                        <option value="{{ cashier.id }}" {% if cashier_id == cashier.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cashier.get_full_name|default:cashier.username }} {% if cashier.staff_profile.employee_id %}(ID: {{ cashier.staff_profile.employee_id }}){% endif %}
+                        </option>
+                        {% empty %}
+                        <option value="" disabled>No cashiers found</option>
+                        {% endfor %}
+                    </select>
+                    <script>
+                        // Ensure dropdown works correctly
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const cashierSelect = document.getElementById('cashier');
+                            if (cashierSelect) {
+                                // Force the dropdown to rebuild its options
+                                const originalHTML = cashierSelect.innerHTML;
+                                cashierSelect.innerHTML = originalHTML;
+
+                                // Ensure the dropdown is properly styled and visible
+                                cashierSelect.style.display = 'block';
+                                cashierSelect.style.visibility = 'visible';
+                                cashierSelect.style.opacity = '1';
+                            }
+                        });
+                    </script>
+                </div>
+                <div>
+                    <label for="payment_method" class="block text-sm font-medium text-gray-400 mb-2">Payment Method</label>
+                    <select name="payment_method" id="payment_method"
+                            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                        <option value="">All Payment Methods</option>
+                        {% for method_code, method_name in payment_methods %}
+                        <option value="{{ method_code }}" {% if payment_method == method_code %}selected{% endif %}>{{ method_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-400 mb-2">Category</label>
+                    <select name="category" id="category"
+                            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-4">
+                <button type="submit" class="px-4 py-2 bg-food-gold text-white rounded-lg hover:bg-food-gold-light focus:outline-none focus:ring-2 focus:ring-food-gold focus:ring-opacity-50">
+                    <i class="fas fa-filter mr-2"></i>Apply Filters
+                </button>
+                <button type="button" id="exportPdfBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-opacity-50">
+                    <i class="fas fa-file-pdf mr-2"></i>Export to PDF
+                </button>
+                <button type="button" id="exportCsvBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-50">
+                    <i class="fas fa-file-csv mr-2"></i>Export to CSV
+                </button>
+                <button type="button" id="printReportBtn" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50">
+                    <i class="fas fa-print mr-2"></i>Print Report
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sales Summary -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">Sales Summary</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="stat-card p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Total Revenue</h3>
+                        <p class="text-2xl font-bold mt-1 text-green-400">₱{{ total_revenue|floatformat:2 }}</p>
+                    </div>
+                    <div class="bg-green-900 p-3 rounded-full">
+                        <i class="fas fa-money-bill-wave text-green-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Total Orders</h3>
+                        <p class="text-2xl font-bold mt-1 text-blue-400">{{ order_count }}</p>
+                    </div>
+                    <div class="bg-blue-900 p-3 rounded-full">
+                        <i class="fas fa-shopping-cart text-blue-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Items Sold</h3>
+                        <p class="text-2xl font-bold mt-1 text-purple-400">{{ total_quantity }}</p>
+                    </div>
+                    <div class="bg-purple-900 p-3 rounded-full">
+                        <i class="fas fa-box text-purple-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Average Order Value</h3>
+                        <p class="text-2xl font-bold mt-1 text-food-gold">
+                            ₱{% if order_count > 0 %}{{ total_revenue|div:order_count|floatformat:2 }}{% else %}0.00{% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-food-gold bg-opacity-20 p-3 rounded-full">
+                        <i class="fas fa-calculator text-food-gold text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Series Chart -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">{{ report_type|title }} Sales Trend</h2>
+        <div class="h-80">
+            <canvas id="timeSeriesChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Sales by Cashier -->
+    {% if cashier_sales %}
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">Sales by Cashier</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 border-b border-gray-800">
+                        <th class="pb-3">Cashier</th>
+                        <th class="pb-3">Orders</th>
+                        <th class="pb-3">Revenue</th>
+                        <th class="pb-3">Avg. Order Value</th>
+                        <th class="pb-3">% of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cashier in cashier_sales %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3">{{ cashier.full_name }}</td>
+                        <td class="py-3">{{ cashier.order_count }}</td>
+                        <td class="py-3">₱{{ cashier.total_sales|floatformat:2 }}</td>
+                        <td class="py-3">₱{{ cashier.avg_order_value|floatformat:2 }}</td>
+                        <td class="py-3">
+                            {% if total_revenue > 0 %}
+                            <div class="flex items-center">
+                                <span class="mr-2">{{ cashier.total_sales|div:total_revenue|mul:100|floatformat:1 }}%</span>
+                                <div class="w-16 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-food-gold h-2 rounded-full" style="width: {{ cashier.total_sales|div:total_revenue|mul:100 }}%;"></div>
+                                </div>
+                            </div>
+                            {% else %}
+                            0%
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-4 text-center text-gray-500">No cashier sales data available for the selected period</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Sales by Item -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">Sales by Menu Item</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full" id="itemSalesTable">
+                <thead>
+                    <tr class="text-left text-gray-400 border-b border-gray-800">
+                        <th class="pb-3">Item</th>
+                        <th class="pb-3">Category</th>
+                        <th class="pb-3">Quantity Sold</th>
+                        <th class="pb-3">Revenue</th>
+                        <th class="pb-3">Avg. Price</th>
+                        <th class="pb-3">% of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in item_sales %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3">{{ item.menu_item__name }}</td>
+                        <td class="py-3">{{ item.menu_item__category__name|default:"No Category" }}</td>
+                        <td class="py-3">{{ item.quantity }}</td>
+                        <td class="py-3">₱{{ item.revenue|floatformat:2 }}</td>
+                        <td class="py-3">₱{{ item.avg_price|floatformat:2 }}</td>
+                        <td class="py-3">
+                            {% if total_revenue > 0 %}
+                            <div class="flex items-center">
+                                <span class="mr-2">{{ item.revenue|div:total_revenue|mul:100|floatformat:1 }}%</span>
+                                <div class="w-16 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-food-gold h-2 rounded-full" style="width: {{ item.revenue|div:total_revenue|mul:100 }}%;"></div>
+                                </div>
+                            </div>
+                            {% else %}
+                            0%
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-4 text-center text-gray-500">No sales data available for the selected period</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Time Series Chart
+        const timeCtx = document.getElementById('timeSeriesChart').getContext('2d');
+        new Chart(timeCtx, {
+            type: 'line',
+            data: {
+                labels: {{ time_labels|safe }},
+                datasets: [{
+                    label: 'Revenue (₱)',
+                    data: {{ time_values|safe }},
+                    backgroundColor: 'rgba(249, 168, 38, 0.2)',
+                    borderColor: 'rgba(249, 168, 38, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Orders',
+                    data: {{ time_counts|safe }},
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Revenue (₱)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                        title: {
+                            display: true,
+                            text: 'Orders'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '{{ report_type|title }}'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Export PDF button
+        document.getElementById('exportPdfBtn').addEventListener('click', function() {
+            // Get current form parameters
+            const form = document.getElementById('reportForm');
+            const formData = new FormData(form);
+            formData.append('export_pdf', 'true');
+
+            // Build URL with parameters
+            let url = "{% url 'export_sales_report' %}?";
+            for (const [key, value] of formData.entries()) {
+                url += `${key}=${encodeURIComponent(value)}&`;
+            }
+
+            // Open in new window
+            window.open(url.slice(0, -1), '_blank');
+        });
+
+        // Export CSV button
+        document.getElementById('exportCsvBtn').addEventListener('click', function() {
+            // Prepare CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+
+            // Add headers
+            csvContent += "Item,Category,Quantity,Revenue,Average Price\n";
+
+            // Add data
+            {% for item in item_sales %}
+            csvContent += "{{ item.menu_item__name|escapejs }},";
+            csvContent += "{{ item.menu_item__category__name|default:'No Category'|escapejs }},";
+            csvContent += "{{ item.quantity }},";
+            csvContent += "{{ item.revenue|floatformat:2 }},";
+            csvContent += "{{ item.avg_price|floatformat:2 }}\n";
+            {% endfor %}
+
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "sales_report_{{ date_from }}_to_{{ date_to }}.csv");
+            document.body.appendChild(link);
+
+            // Trigger download
+            link.click();
+        });
+
+        // Print Report button
+        document.getElementById('printReportBtn').addEventListener('click', function() {
+            window.print();
+        });
+    });
+</script>
+{% endblock extra_scripts %}

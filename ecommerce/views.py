@@ -14,6 +14,7 @@ from .models import Category, MenuItem, Cart, CartItem, Order, OrderItem, Review
 from django.contrib.auth.forms import PasswordChangeForm
 from .forms import RegistrationForm, CheckoutForm, GCashPaymentForm, ReservationForm, ReservationPaymentForm
 import logging
+import json
 logger = logging.getLogger(__name__)
 
 def redirect_based_on_role(user):
@@ -1853,6 +1854,76 @@ def customer_dashboard(request):
     # Calculate total spent from both orders and reservations
     total_spent = orders_total + reservations_total
 
+    # Calculate average order value
+    avg_order = total_spent / total_orders if total_orders > 0 else 0
+
+    # Get spending data over time for reports
+    spending_data = None
+    category_data = None
+    category_data_chart = None
+
+    # Get orders with dates for spending over time chart
+    orders_by_date = user_orders.filter(
+        created_at__gte=timezone.now() - timezone.timedelta(days=90)
+    ).values('created_at__date').annotate(
+        total=models.Sum('total_amount')
+    ).order_by('created_at__date')
+
+    if orders_by_date.exists():
+        # Format data for chart
+        dates = [order['created_at__date'].strftime('%b %d') for order in orders_by_date]
+        values = [float(order['total']) for order in orders_by_date]
+        spending_data = {
+            'labels': json.dumps(dates),
+            'values': json.dumps(values)
+        }
+
+    # Get spending by category
+    category_spending = OrderItem.objects.filter(
+        order__user=request.user,
+        order__status='COMPLETED'
+    ).values(
+        'menu_item__category__name'
+    ).annotate(
+        total=models.Sum(models.F('price') * models.F('quantity'))
+    ).order_by('-total')
+
+    if category_spending.exists():
+        # Colors for the chart
+        chart_colors = [
+            '#F9A826', '#3B82F6', '#10B981', '#8B5CF6', '#EF4444',
+            '#EC4899', '#F97316', '#14B8A6', '#6366F1', '#84CC16'
+        ]
+
+        # Format data for display
+        category_data = []
+        category_names = []
+        category_values = []
+        category_colors = []
+
+        total_category_spending = sum(item['total'] for item in category_spending)
+
+        for i, category in enumerate(category_spending):
+            color_index = i % len(chart_colors)
+            percentage = (category['total'] / total_category_spending * 100) if total_category_spending > 0 else 0
+
+            category_data.append({
+                'name': category['menu_item__category__name'],
+                'amount': float(category['total']),
+                'percentage': round(percentage, 1),
+                'color': chart_colors[color_index]
+            })
+
+            category_names.append(category['menu_item__category__name'])
+            category_values.append(float(category['total']))
+            category_colors.append(chart_colors[color_index])
+
+        category_data_chart = {
+            'labels': json.dumps(category_names),
+            'values': json.dumps(category_values),
+            'colors': json.dumps(category_colors)
+        }
+
     # Check if this is an HTMX request for partial updates
     if request.headers.get('HX-Request'):
         if request.GET.get('section') == 'stats':
@@ -1872,6 +1943,16 @@ def customer_dashboard(request):
             # Return only the reviews section
             return render(request, 'accounts/partials/dashboard_reviews.html', {
                 'user_reviews': user_reviews,
+            })
+        elif request.GET.get('section') == 'reports':
+            # Return only the reports section
+            return render(request, 'components/reports/customer_reports.html', {
+                'total_spent': total_spent,
+                'orders_count': total_orders,
+                'avg_order': avg_order,
+                'spending_data': spending_data,
+                'category_data': category_data,
+                'category_data_chart': category_data_chart,
             })
 
     # Get favorite items (most ordered)
@@ -1909,7 +1990,13 @@ def customer_dashboard(request):
         'has_active_orders': has_active_orders,
         'has_active_reservations': has_active_reservations,
         # Current time for real-time updates
-        'now': timezone.now()
+        'now': timezone.now(),
+        # Reports data
+        'avg_order': avg_order,
+        'orders_count': total_orders,
+        'spending_data': spending_data,
+        'category_data': category_data,
+        'category_data_chart': category_data_chart
     }
 
     return render(request, 'accounts/customer_dashboard.html', context)

@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Static Files</title>
+</head>
+<body>
+    <h1>Testing Static Files</h1>
+    <p>This page is used to test if static files are being served correctly.</p>
+    
+    <h2>Testing JavaScript</h2>
+    <p>The following script should create a chart:</p>
+    
+    <div style="width: 400px; height: 200px;">
+        <canvas id="testChart"></canvas>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'js/report_utils.js' %}"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Define test data
+            const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            const data = [12, 19, 3, 5, 2, 3];
+            
+            // Create chart
+            const ctx = document.getElementById('testChart').getContext('2d');
+            
+            // Check if createBarChart function is available
+            if (typeof createBarChart === 'function') {
+                createBarChart(ctx, labels, data, {
+                    label: 'Test Data'
+                });
+                document.getElementById('status').textContent = 'Success! The chart was created using report_utils.js';
+                document.getElementById('status').style.color = 'green';
+            } else {
+                document.getElementById('status').textContent = 'Error: The createBarChart function is not available. Static file may not be loading correctly.';
+                document.getElementById('status').style.color = 'red';
+                
+                // Create a basic chart using Chart.js directly as fallback
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Test Data (Fallback)',
+                            data: data,
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+    
+    <p id="status" style="font-weight: bold; margin-top: 20px;">Checking static file loading...</p>
+    
+    <h2>Static File Path</h2>
+    <p>The static file path is: <code>{% static 'js/report_utils.js' %}</code></p>
+</body>
+</html>

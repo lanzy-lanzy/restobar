@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Sum, Count, Q, F, Avg, DecimalField, Value
 from django.db.models.expressions import ExpressionWrapper, RawSQL
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.models import User
 from decimal import Decimal
 import datetime
@@ -16,6 +16,7 @@ from .models import (
     StaffProfile, InventoryTransaction, SalesSummary, PriceHistory,
     Reservation
 )
+from .utils.pdf_utils import generate_sales_report_pdf
 
 @login_required
 def manager_dashboard(request):
@@ -573,12 +574,25 @@ def cashier_sales_report(request):
     date_to = request.GET.get('date_to', today.isoformat())
     cashier_id = request.GET.get('cashier', '')
 
-    # Get all cashiers (users with staff profile and CASHIER role)
+    # Ensure cashier_id is a string for template comparison
+    cashier_id = str(cashier_id) if cashier_id else ''
+
+    # Get users who can process orders (primarily cashiers)
+    # Include users with CASHIER role and users who have created orders
     cashiers = User.objects.filter(
         staff_profile__isnull=False,
-        staff_profile__role='CASHIER',
-        staff_profile__is_active_staff=True
-    ).select_related('staff_profile')
+        staff_profile__is_active_staff=True,
+        staff_profile__role='CASHIER'
+    ).distinct().select_related('staff_profile')
+
+    # If no cashiers found, include users who have created orders
+    if not cashiers.exists():
+        cashiers = User.objects.filter(
+            Q(staff_profile__isnull=False) &
+            Q(created_orders__isnull=False)
+        ).distinct().select_related('staff_profile')
+
+    # Cashier query is now working correctly
 
     # Get completed orders within date range
     orders_query = Order.objects.filter(
@@ -597,7 +611,8 @@ def cashier_sales_report(request):
         'created_by__id',
         'created_by__username',
         'created_by__first_name',
-        'created_by__last_name'
+        'created_by__last_name',
+        'created_by__staff_profile__employee_id'
     ).annotate(
         order_count=Count('id'),
         total_sales=Sum('total_amount'),
@@ -606,16 +621,18 @@ def cashier_sales_report(request):
 
     # Enrich data with additional cashier information
     for sale in cashier_sales:
-        # Get the cashier user object
+        # Set the full name
+        sale['full_name'] = f"{sale['created_by__first_name']} {sale['created_by__last_name']}".strip() or sale['created_by__username']
+
+        # Set the employee_id from the query result
+        sale['employee_id'] = sale['created_by__staff_profile__employee_id']
+
+        # Get additional information if needed
         try:
             cashier = User.objects.get(id=sale['created_by__id'])
-            sale['full_name'] = cashier.get_full_name() or cashier.username
             sale['role'] = cashier.staff_profile.get_role_display() if hasattr(cashier, 'staff_profile') else 'Unknown'
-            sale['employee_id'] = cashier.staff_profile.employee_id if hasattr(cashier, 'staff_profile') else ''
         except User.DoesNotExist:
-            sale['full_name'] = f"{sale['created_by__first_name']} {sale['created_by__last_name']}".strip() or sale['created_by__username']
             sale['role'] = 'Unknown'
-            sale['employee_id'] = ''
 
     # Get daily sales data for selected cashier or all cashiers
     daily_sales = []
@@ -765,3 +782,124 @@ def get_client_ip(request):
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+
+@login_required
+def export_cashier_sales_report_pdf(request):
+    """Export cashier sales report as PDF"""
+    # Get date range
+    today = timezone.now().date()
+    date_from = request.GET.get('date_from', (today - datetime.timedelta(days=30)).isoformat())
+    date_to = request.GET.get('date_to', today.isoformat())
+    cashier_id = request.GET.get('cashier', '')
+
+    # Ensure cashier_id is a string for template comparison
+    cashier_id = str(cashier_id) if cashier_id else ''
+
+    # Cashier ID is now properly handled
+
+    # Convert string dates to date objects
+    try:
+        date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d').date()
+        date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d').date()
+    except ValueError:
+        # Handle invalid date format
+        date_from = today - datetime.timedelta(days=30)
+        date_to = today
+
+    # Get cashier name if filter is applied
+    cashier_name = "All Cashiers"
+    report_title = "Cashier Sales Report"
+    if cashier_id:
+        try:
+            cashier = User.objects.get(id=cashier_id)
+            cashier_name = f"{cashier.first_name} {cashier.last_name}".strip() or cashier.username
+            report_title = f"Cashier Sales Report - {cashier_name}"
+        except User.DoesNotExist:
+            pass
+
+    # Get completed orders within date range
+    orders_query = Order.objects.filter(
+        status='COMPLETED',
+        created_at__date__gte=date_from,
+        created_at__date__lte=date_to,
+        created_by__isnull=False
+    )
+
+    # Filter by specific cashier if selected
+    if cashier_id:
+        orders_query = orders_query.filter(created_by_id=cashier_id)
+
+    # Get sales data by cashier
+    cashier_sales = orders_query.values(
+        'created_by__id',
+        'created_by__username',
+        'created_by__first_name',
+        'created_by__last_name',
+        'created_by__staff_profile__employee_id'
+    ).annotate(
+        order_count=Count('id'),
+        total_sales=Sum('total_amount'),
+        avg_order_value=Avg('total_amount')
+    ).order_by('-total_sales')
+
+    # Enrich data with additional cashier information
+    for sale in cashier_sales:
+        # Set the full name
+        sale['full_name'] = f"{sale['created_by__first_name']} {sale['created_by__last_name']}".strip() or sale['created_by__username']
+
+        # Set the employee_id from the query result
+        sale['employee_id'] = sale['created_by__staff_profile__employee_id']
+
+        # Get additional information if needed
+        try:
+            cashier = User.objects.get(id=sale['created_by__id'])
+            sale['role'] = cashier.staff_profile.get_role_display() if hasattr(cashier, 'staff_profile') else 'Unknown'
+        except User.DoesNotExist:
+            sale['role'] = 'Unknown'
+
+    # Calculate totals
+    total_orders = sum(sale['order_count'] for sale in cashier_sales)
+    total_revenue = sum(sale['total_sales'] or 0 for sale in cashier_sales)
+    avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
+
+    # Get payment method sales
+    payment_method_sales = orders_query.values(
+        'payment_method'
+    ).annotate(
+        count=Count('id'),
+        total=Sum('total_amount')
+    ).order_by('-total')
+
+    # Get order type sales
+    order_type_sales = orders_query.values(
+        'order_type'
+    ).annotate(
+        count=Count('id'),
+        total=Sum('total_amount')
+    ).order_by('-total')
+
+    # Set a more descriptive filename that includes cashier info if filtered
+    if cashier_id:
+        filename = f"cashier_sales_report_{cashier_name.replace(' ', '_')}_{date_from}_to_{date_to}.pdf"
+    else:
+        filename = f"cashier_sales_report_{date_from}_to_{date_to}.pdf"
+
+    # Generate PDF with custom title for cashier-specific reports
+    response = generate_sales_report_pdf(
+        date_from,
+        date_to,
+        [],  # item_sales - not used in this report
+        total_revenue,
+        0,  # total_quantity - not used in this report
+        payment_method_sales,
+        order_type_sales,
+        [],  # category_sales - not used in this report
+        total_orders,
+        cashier_name
+    )
+
+    # Update the filename in the response
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response

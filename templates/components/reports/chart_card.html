@@ -1,0 +1,26 @@
+{% comment %}
+Chart Card Component for Sales Reports
+Usage:
+{% include 'components/reports/chart_card.html' with 
+    title="Sales Over Time" 
+    chart_id="timeSeriesChart" 
+    height=80 
+%}
+
+Note: You need to initialize the chart in your JavaScript code using the chart_id
+{% endcomment %}
+
+<div class="card p-6 transition-all duration-300 hover:shadow-lg">
+    <h2 class="text-xl font-bold mb-4 flex items-center">
+        <i class="fas fa-chart-line mr-2 text-food-gold"></i>
+        <span>{{ title }}</span>
+        {% if show_download %}
+        <button type="button" class="ml-auto text-sm text-food-gold hover:text-food-gold-light focus:outline-none download-chart" data-chart="{{ chart_id }}">
+            <i class="fas fa-download mr-1"></i>Download
+        </button>
+        {% endif %}
+    </h2>
+    <div class="h-{{ height|default:80 }}">
+        <canvas id="{{ chart_id }}"></canvas>
+    </div>
+</div>

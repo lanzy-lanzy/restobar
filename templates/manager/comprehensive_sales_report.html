@@ -1,0 +1,452 @@
+{% extends 'manager/base.html' %}
+{% load math_filters custom_filters %}
+
+{% block title %}Comprehensive Sales Report - 5th Avenue Grill and Restobar{% endblock title %}
+
+{% block page_title %}Comprehensive Sales Report{% endblock page_title %}
+{% block page_subtitle %}Detailed sales analysis with multiple views and filtering options{% endblock page_subtitle %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Filters -->
+    <div class="card p-6">
+        <h3 class="text-lg font-semibold mb-4">Filter Sales Data</h3>
+        <form method="GET" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="date_from" class="block text-sm font-medium text-gray-400 mb-2">Date From</label>
+                    <input type="date" name="date_from" id="date_from" value="{{ date_from }}"
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                </div>
+                <div>
+                    <label for="date_to" class="block text-sm font-medium text-gray-400 mb-2">Date To</label>
+                    <input type="date" name="date_to" id="date_to" value="{{ date_to }}"
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                </div>
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-400 mb-2">Category</label>
+                    <select name="category" id="category"
+                            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if category_filter == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="cashier" class="block text-sm font-medium text-gray-400 mb-2">Cashier</label>
+                    <select name="cashier" id="cashier"
+                            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                        <option value="">All Cashiers</option>
+                        {% for cashier in cashiers %}
+                        <option value="{{ cashier.id }}" {% if cashier_filter == cashier.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cashier.get_full_name|default:cashier.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="payment_method" class="block text-sm font-medium text-gray-400 mb-2">Payment Method</label>
+                    <select name="payment_method" id="payment_method"
+                            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                        <option value="">All Payment Methods</option>
+                        {% for method_code, method_name in payment_methods %}
+                        <option value="{{ method_code }}" {% if payment_method_filter == method_code %}selected{% endif %}>{{ method_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-4">
+                <button type="submit" class="px-4 py-2 bg-food-gold text-white rounded-lg hover:bg-food-gold-light focus:outline-none focus:ring-2 focus:ring-food-gold focus:ring-opacity-50">
+                    <i class="fas fa-filter mr-2"></i>Apply Filters
+                </button>
+                <button type="submit" name="reset" value="true" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-opacity-50">
+                    <i class="fas fa-undo mr-2"></i>Reset Filters
+                </button>
+                <button type="button" id="printReportBtn" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50">
+                    <i class="fas fa-print mr-2"></i>Print Report
+                </button>
+                <button type="button" id="exportCsvBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-50">
+                    <i class="fas fa-file-csv mr-2"></i>Export to CSV
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sales Summary -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">Sales Summary</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="stat-card p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Total Revenue</h3>
+                        <p class="text-2xl font-bold mt-1 text-green-400">₱{{ total_revenue|floatformat:2 }}</p>
+                    </div>
+                    <div class="bg-green-900 p-3 rounded-full">
+                        <i class="fas fa-money-bill-wave text-green-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Total Orders</h3>
+                        <p class="text-2xl font-bold mt-1 text-blue-400">{{ total_orders }}</p>
+                    </div>
+                    <div class="bg-blue-900 p-3 rounded-full">
+                        <i class="fas fa-shopping-cart text-blue-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Items Sold</h3>
+                        <p class="text-2xl font-bold mt-1 text-purple-400">{{ total_quantity }}</p>
+                    </div>
+                    <div class="bg-purple-900 p-3 rounded-full">
+                        <i class="fas fa-box text-purple-400 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-6 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-gray-400 text-sm font-medium">Average Order Value</h3>
+                        <p class="text-2xl font-bold mt-1 text-food-gold">₱{{ avg_order_value|floatformat:2 }}</p>
+                    </div>
+                    <div class="bg-food-gold bg-opacity-20 p-3 rounded-full">
+                        <i class="fas fa-calculator text-food-gold text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Visualization -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card p-6">
+            <h2 class="text-xl font-bold mb-4">Daily Sales Trend</h2>
+            <div class="h-80">
+                <canvas id="dailySalesChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <h2 class="text-xl font-bold mb-4">Sales by Hour</h2>
+            <div class="h-80">
+                <canvas id="hourlySalesChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Items and Categories -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card p-6">
+            <h2 class="text-xl font-bold mb-4">Top Items by Revenue</h2>
+            <div class="h-80">
+                <canvas id="topItemsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <h2 class="text-xl font-bold mb-4">Sales by Category</h2>
+            <div class="h-80">
+                <canvas id="categorySalesChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cashier and Payment Method -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card p-6">
+            <h2 class="text-xl font-bold mb-4">Sales by Cashier</h2>
+            <div class="h-80">
+                <canvas id="cashierSalesChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card p-6">
+            <h2 class="text-xl font-bold mb-4">Sales by Payment Method</h2>
+            <div class="h-80">
+                <canvas id="paymentMethodChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales by Item -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4">Sales by Menu Item</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full" id="itemSalesTable">
+                <thead>
+                    <tr class="text-left text-gray-400 border-b border-gray-800">
+                        {% for header in item_headers %}
+                        <th class="pb-3">{{ header.name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in item_sales %}
+                    <tr class="border-b border-gray-800">
+                        <td class="py-3">{{ item.menu_item__name }}</td>
+                        <td class="py-3">{{ item.menu_item__category__name|default:"No Category" }}</td>
+                        <td class="py-3">{{ item.quantity }}</td>
+                        <td class="py-3">₱{{ item.revenue|floatformat:2 }}</td>
+                        <td class="py-3">₱{{ item.avg_price|floatformat:2 }}</td>
+                        <td class="py-3">{{ item.orders }}</td>
+                        <td class="py-3">
+                            {% if total_revenue > 0 %}
+                            <div class="flex items-center">
+                                <span class="mr-2">{{ item.percentage|floatformat:1 }}%</span>
+                                <div class="w-16 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-food-gold h-2 rounded-full" style="width: {{ item.percentage }}%;"></div>
+                                </div>
+                            </div>
+                            {% else %}
+                            0%
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-4 text-center text-gray-500">No sales data available for the selected period</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Daily Sales Chart
+        const dailyCtx = document.getElementById('dailySalesChart').getContext('2d');
+        new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: {{ daily_labels|safe }},
+                datasets: [{
+                    label: 'Revenue (₱)',
+                    data: {{ daily_values|safe }},
+                    backgroundColor: 'rgba(249, 168, 38, 0.2)',
+                    borderColor: 'rgba(249, 168, 38, 1)',
+                    borderWidth: 2,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Daily Sales'
+                    }
+                }
+            }
+        });
+
+        // Hourly Sales Chart
+        const hourlyCtx = document.getElementById('hourlySalesChart').getContext('2d');
+        new Chart(hourlyCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ hourly_labels|safe }},
+                datasets: [{
+                    label: 'Revenue (₱)',
+                    data: {{ hourly_values|safe }},
+                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales by Hour'
+                    }
+                }
+            }
+        });
+
+        // Top Items Chart
+        const topItemsCtx = document.getElementById('topItemsChart').getContext('2d');
+        new Chart(topItemsCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ top_items_names|safe }},
+                datasets: [{
+                    label: 'Revenue (₱)',
+                    data: {{ top_items_revenue|safe }},
+                    backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Top Items by Revenue'
+                    }
+                }
+            }
+        });
+
+        // Category Sales Chart
+        const categoryCtx = document.getElementById('categorySalesChart').getContext('2d');
+        new Chart(categoryCtx, {
+            type: 'pie',
+            data: {
+                labels: {{ category_names|safe }},
+                datasets: [{
+                    label: 'Revenue',
+                    data: {{ category_values|safe }},
+                    backgroundColor: [
+                        'rgba(249, 168, 38, 0.7)',
+                        'rgba(59, 130, 246, 0.7)',
+                        'rgba(16, 185, 129, 0.7)',
+                        'rgba(239, 68, 68, 0.7)',
+                        'rgba(139, 92, 246, 0.7)',
+                        'rgba(245, 158, 11, 0.7)',
+                        'rgba(20, 184, 166, 0.7)',
+                        'rgba(236, 72, 153, 0.7)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales by Category'
+                    }
+                }
+            }
+        });
+
+        // Cashier Sales Chart
+        const cashierCtx = document.getElementById('cashierSalesChart').getContext('2d');
+        new Chart(cashierCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ cashier_names|safe }},
+                datasets: [{
+                    label: 'Revenue (₱)',
+                    data: {{ cashier_values|safe }},
+                    backgroundColor: 'rgba(139, 92, 246, 0.5)',
+                    borderColor: 'rgba(139, 92, 246, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales by Cashier'
+                    }
+                }
+            }
+        });
+
+        // Payment Method Chart
+        const paymentCtx = document.getElementById('paymentMethodChart').getContext('2d');
+        new Chart(paymentCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ payment_method_names|safe }},
+                datasets: [{
+                    label: 'Revenue',
+                    data: {{ payment_method_values|safe }},
+                    backgroundColor: [
+                        'rgba(249, 168, 38, 0.7)',
+                        'rgba(59, 130, 246, 0.7)',
+                        'rgba(16, 185, 129, 0.7)',
+                        'rgba(239, 68, 68, 0.7)',
+                        'rgba(139, 92, 246, 0.7)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales by Payment Method'
+                    }
+                }
+            }
+        });
+
+        // Print Report button
+        document.getElementById('printReportBtn').addEventListener('click', function() {
+            window.print();
+        });
+
+        // Export CSV button
+        document.getElementById('exportCsvBtn').addEventListener('click', function() {
+            // Prepare CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+
+            // Add headers
+            csvContent += "Item,Category,Quantity,Revenue,Average Price,Orders,Percentage\n";
+
+            // Add data
+            {% for item in item_sales %}
+            csvContent += "{{ item.menu_item__name|escapejs }},";
+            csvContent += "{{ item.menu_item__category__name|default:'No Category'|escapejs }},";
+            csvContent += "{{ item.quantity }},";
+            csvContent += "{{ item.revenue|floatformat:2 }},";
+            csvContent += "{{ item.avg_price|floatformat:2 }},";
+            csvContent += "{{ item.orders }},";
+            csvContent += "{{ item.percentage|floatformat:1 }}%\n";
+            {% endfor %}
+
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "comprehensive_sales_report_{{ date_from }}_to_{{ date_to }}.csv");
+            document.body.appendChild(link);
+
+            // Trigger download
+            link.click();
+        });
+    });
+</script>
+{% endblock extra_scripts %}

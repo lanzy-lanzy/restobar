@@ -1,0 +1,96 @@
+{% comment %}
+Filter Panel Component for Sales Reports
+Usage:
+{% include 'components/reports/filter_panel.html' with 
+    date_from=date_from 
+    date_to=date_to 
+    cashier_filter=cashier_filter 
+    cashiers=cashiers 
+    category_filter=category_filter 
+    categories=categories 
+    payment_method_filter=payment_method_filter 
+    payment_methods=payment_methods 
+%}
+{% endcomment %}
+
+<div class="card p-6 filter-card transition-all duration-300 hover:shadow-lg">
+    <h3 class="text-lg font-semibold mb-4 flex items-center">
+        <i class="fas fa-filter mr-2 text-food-gold"></i>
+        <span>Filter Sales Data</span>
+    </h3>
+    <form method="GET" class="space-y-4" id="sales-filter-form">
+        <!-- Basic Filters -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="date_from" class="block text-sm font-medium text-gray-400 mb-2">Date From</label>
+                <input type="date" name="date_from" id="date_from" value="{{ date_from }}"
+                       class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+            </div>
+            <div>
+                <label for="date_to" class="block text-sm font-medium text-gray-400 mb-2">Date To</label>
+                <input type="date" name="date_to" id="date_to" value="{{ date_to }}"
+                       class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="px-4 py-2 bg-food-gold text-white rounded-lg hover:bg-food-gold-light focus:outline-none focus:ring-2 focus:ring-food-gold focus:ring-opacity-50 transition-all duration-300">
+                    <i class="fas fa-search mr-2"></i>Apply Filters
+                </button>
+                <a href="?reset=true" class="ml-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition-all duration-300">
+                    <i class="fas fa-redo-alt"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Advanced Filters (Collapsible) -->
+        <div x-data="{ showAdvanced: false }">
+            <button type="button" @click="showAdvanced = !showAdvanced" class="text-food-gold hover:text-food-gold-light focus:outline-none text-sm flex items-center">
+                <span x-text="showAdvanced ? 'Hide Advanced Filters' : 'Show Advanced Filters'"></span>
+                <i class="fas" :class="showAdvanced ? 'fa-chevron-up ml-1' : 'fa-chevron-down ml-1'"></i>
+            </button>
+            
+            <div x-show="showAdvanced" x-transition class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 mt-3 border-t border-gray-700">
+                {% if cashiers %}
+                <div>
+                    <label for="cashier" class="block text-sm font-medium text-gray-400 mb-2">Cashier</label>
+                    <select name="cashier" id="cashier" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                        <option value="">All Cashiers</option>
+                        {% for cashier in cashiers %}
+                        <option value="{{ cashier.id }}" {% if cashier_filter == cashier.id|stringformat:"i" %}selected{% endif %}>
+                            {{ cashier.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                {% if categories %}
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-400 mb-2">Category</label>
+                    <select name="category" id="category" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if category_filter == category.id|stringformat:"i" %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                {% if payment_methods %}
+                <div>
+                    <label for="payment_method" class="block text-sm font-medium text-gray-400 mb-2">Payment Method</label>
+                    <select name="payment_method" id="payment_method" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                        <option value="">All Payment Methods</option>
+                        {% for method in payment_methods %}
+                        <option value="{{ method.0 }}" {% if payment_method_filter == method.0 %}selected{% endif %}>
+                            {{ method.1 }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>

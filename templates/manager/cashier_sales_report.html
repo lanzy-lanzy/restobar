@@ -6,6 +6,41 @@
 {% block page_title %}Cashier Sales Report{% endblock page_title %}
 {% block page_subtitle %}Track sales performance by cashier{% endblock page_subtitle %}
 
+{% block extra_css %}
+<style>
+    /* Enhanced fix for dropdown display issues */
+    select {
+        appearance: auto !important;
+        -webkit-appearance: auto !important;
+        -moz-appearance: auto !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: relative !important;
+        z-index: 10 !important;
+    }
+
+    /* Ensure dropdown options are visible */
+    select option {
+        background-color: #374151;
+        color: white;
+        padding: 8px;
+        display: block !important;
+    }
+
+    /* Fix for dropdown container */
+    .dropdown-container {
+        position: relative;
+        width: 100%;
+    }
+
+    /* Make sure the dropdown arrow is visible */
+    select::-ms-expand {
+        display: block !important;
+    }
+</style>
+{% endblock extra_css %}
+
 {% block content %}
 <div class="space-y-8">
     <!-- Filters -->
@@ -24,17 +59,34 @@
                        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
             </div>
 
-            <div>
+            <div class="dropdown-container">
                 <label for="cashier" class="block text-sm font-medium text-gray-400 mb-2">Cashier</label>
                 <select name="cashier" id="cashier"
                        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
                     <option value="">All Cashiers</option>
                     {% for cashier in cashiers %}
-                    <option value="{{ cashier.id }}" {% if cashier_id == cashier.id|stringformat:"i" %}selected{% endif %}>
-                        {{ cashier.get_full_name|default:cashier.username }}
+                    <option value="{{ cashier.id }}" {% if cashier_id == cashier.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cashier.get_full_name|default:cashier.username }} {% if cashier.staff_profile.employee_id %}(ID: {{ cashier.staff_profile.employee_id }}){% endif %}
                     </option>
                     {% endfor %}
                 </select>
+                <script>
+                    // Ensure dropdown works correctly
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const cashierSelect = document.getElementById('cashier');
+                        if (cashierSelect) {
+                            // Force the dropdown to rebuild its options
+                            const originalHTML = cashierSelect.innerHTML;
+                            cashierSelect.innerHTML = originalHTML;
+
+                            // Ensure the dropdown is properly styled and visible
+                            cashierSelect.style.display = 'block';
+                            cashierSelect.style.visibility = 'visible';
+                            cashierSelect.style.opacity = '1';
+                        }
+                    });
+                </script>
+                <!-- Cashier dropdown is now working correctly -->
             </div>
 
             <div class="md:col-span-3 flex gap-2">
@@ -44,8 +96,8 @@
                 <a href="{% url 'cashier_sales_report' %}" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition duration-200">
                     <i class="fas fa-times mr-2"></i> Clear Filters
                 </a>
-                <button type="button" onclick="window.print()" class="ml-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200 no-print">
-                    <i class="fas fa-print mr-2"></i> Print Report
+                <button type="button" id="exportPdfBtn" class="ml-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200 no-print">
+                    <i class="fas fa-file-pdf mr-2"></i> Export PDF
                 </button>
             </div>
         </form>
@@ -159,7 +211,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Daily Sales Chart
         const ctx = document.getElementById('dailySalesChart').getContext('2d');
-        
+
         const dailySalesChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -232,6 +284,29 @@
                     }
                 }
             }
+        });
+
+        // Export PDF button
+        document.getElementById('exportPdfBtn').addEventListener('click', function() {
+            // Get current form parameters
+            const form = document.querySelector('form');
+            const formData = new FormData(form);
+
+            // Build URL with parameters
+            let url = "{% url 'export_cashier_sales_report_pdf' %}?";
+            for (const [key, value] of formData.entries()) {
+                if (value) { // Only add non-empty values
+                    url += `${key}=${encodeURIComponent(value)}&`;
+                }
+            }
+
+            // Remove trailing & if present
+            if (url.endsWith('&')) {
+                url = url.slice(0, -1);
+            }
+
+            // Open in new window
+            window.open(url, '_blank');
         });
     });
 </script>

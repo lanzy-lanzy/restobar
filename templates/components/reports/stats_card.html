@@ -1,0 +1,51 @@
+{% comment %}
+Stats Card Component for Sales Reports
+Usage:
+{% include 'components/reports/stats_card.html' with 
+    title="Total Revenue" 
+    value=total_revenue 
+    icon="fa-money-bill-wave" 
+    color="green" 
+    subtitle="From 150 orders" 
+    is_currency=True 
+%}
+
+Available colors: green, blue, purple, amber, red, food-gold
+{% endcomment %}
+
+<div class="stat-card p-6 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+    <div class="flex items-center justify-between">
+        <div>
+            <h3 class="text-gray-400 text-sm font-medium">{{ title }}</h3>
+            <p class="text-2xl font-bold mt-1 
+                {% if color == 'green' %}text-green-400
+                {% elif color == 'blue' %}text-blue-400
+                {% elif color == 'purple' %}text-purple-400
+                {% elif color == 'amber' %}text-amber-400
+                {% elif color == 'red' %}text-red-400
+                {% else %}text-food-gold{% endif %}">
+                {% if is_currency %}₱{{ value|floatformat:2 }}{% else %}{{ value }}{% endif %}
+            </p>
+        </div>
+        <div class="
+            {% if color == 'green' %}bg-green-900 p-3 rounded-full
+            {% elif color == 'blue' %}bg-blue-900 p-3 rounded-full
+            {% elif color == 'purple' %}bg-purple-900 p-3 rounded-full
+            {% elif color == 'amber' %}bg-amber-900 p-3 rounded-full
+            {% elif color == 'red' %}bg-red-900 p-3 rounded-full
+            {% else %}bg-food-gold bg-opacity-20 p-3 rounded-full{% endif %}">
+            <i class="fas {{ icon }} 
+                {% if color == 'green' %}text-green-400
+                {% elif color == 'blue' %}text-blue-400
+                {% elif color == 'purple' %}text-purple-400
+                {% elif color == 'amber' %}text-amber-400
+                {% elif color == 'red' %}text-red-400
+                {% else %}text-food-gold{% endif %} text-xl"></i>
+        </div>
+    </div>
+    {% if subtitle %}
+    <div class="mt-2">
+        <p class="text-gray-400 text-sm">{{ subtitle }}</p>
+    </div>
+    {% endif %}
+</div>

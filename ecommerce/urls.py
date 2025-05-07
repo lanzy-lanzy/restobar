@@ -34,14 +34,20 @@ from .cashier_reports import (
 from .manager import (
     manager_dashboard, sales_report, inventory_overview,
     staff_overview, performance_metrics, reservations_dashboard,
-    cashier_sales_report, manager_profile_edit
+    cashier_sales_report, manager_profile_edit, export_cashier_sales_report_pdf
 )
+from .manager_reports import (
+    comprehensive_sales_report, cashier_performance_report
+)
+from .export_sales_report import export_sales_report
+from .test_views import test_static
 from .customer_management import (
     customer_list, customer_detail, blacklist_customer, unblacklist_customer
 )
 
 urlpatterns = [
     path('', home, name='home'),
+    path('test-static/', test_static, name='test_static'),
     path('menu/', menu, name='menu'),
     path('filter-menu/', filter_menu, name='filter_menu'),
     path('api/menu-items/', menu_items_api, name='menu_items_api'),
@@ -174,11 +180,19 @@ urlpatterns = [
     # Manager Dashboard
     path('manager/', manager_dashboard, name='manager_dashboard'),
     path('manager/profile/', manager_profile_edit, name='manager_profile_edit'),
+
+    # Sales Reports
     path('manager/sales-report/', sales_report, name='sales_report'),
+    path('manager/sales-report/comprehensive/', comprehensive_sales_report, name='comprehensive_sales_report'),
+    path('manager/sales-report/cashier-performance/', cashier_performance_report, name='cashier_performance_report'),
+    path('manager/cashier-sales/', cashier_sales_report, name='cashier_sales_report'),
+    path('manager/cashier-sales/export-pdf/', export_cashier_sales_report_pdf, name='export_cashier_sales_report_pdf'),
+    path('manager/export-sales-report/', export_sales_report, name='export_sales_report'),
+
+    # Other Manager Features
     path('manager/inventory-overview/', inventory_overview, name='inventory_overview'),
     path('manager/staff-overview/', staff_overview, name='staff_overview'),
     path('manager/performance-metrics/', performance_metrics, name='performance_metrics'),
     path('manager/reservations/', reservations_dashboard, name='reservations_dashboard'),
     path('manager/reservations/<int:reservation_id>/update-status/', update_reservation_status, name='update_reservation_status'),
-    path('manager/cashier-sales/', cashier_sales_report, name='cashier_sales_report'),
 ]

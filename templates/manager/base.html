@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -23,6 +24,25 @@
                         'food-gold-light': '#FFBB4D',
                         'food-red': '#E53E3E',
                         'food-red-light': '#F56565',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'fade-in-up': 'fadeInUp 0.5s ease-in-out',
+                        'fade-in-down': 'fadeInDown 0.5s ease-in-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        fadeInDown: {
+                            '0%': { opacity: '0', transform: 'translateY(-20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
                     }
                 }
             }
@@ -51,6 +71,11 @@
         .card {
             background-color: #1F2937;
             border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
         }
 
         .stat-card {
@@ -79,6 +104,32 @@
             color: white;
         }
 
+        /* Filter card styles */
+        .filter-card {
+            transition: all 0.3s ease;
+        }
+        .filter-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Data card styles */
+        .data-card {
+            transition: all 0.3s ease;
+        }
+        .data-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Export button styles */
+        .export-btn {
+            transition: all 0.3s ease;
+        }
+        .export-btn:hover {
+            transform: translateY(-2px);
+        }
+
         /* Print styles */
         @media print {
             .no-print {
@@ -98,6 +149,27 @@
                 background-color: white;
                 box-shadow: none;
                 border: 1px solid #e5e7eb;
+            }
+
+            /* Ensure charts are visible when printing */
+            canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+
+            /* Ensure tables break properly across pages */
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            thead {
+                display: table-header-group;
+            }
+            tfoot {
+                display: table-footer-group;
             }
         }
     </style>
@@ -130,12 +202,37 @@
         </svg>
         Dashboard
       </a>
-      <a href="{% url 'sales_report' %}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if active_section == 'sales_report' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %} mt-1">
-        <svg class="mr-3 h-6 w-6 {% if active_section == 'sales_report' %}text-white{% else %}text-gray-400 group-hover:text-white{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-        </svg>
-        Sales Report
-      </a>
+      <!-- Sales Reports Dropdown -->
+      <div x-data="{ open: false }" class="mt-1">
+        <button @click="open = !open" class="w-full group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-700">
+          <svg class="mr-3 h-6 w-6 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+          Sales Reports
+          <svg class="ml-auto h-5 w-5" :class="{'transform rotate-90': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+        <div x-show="open" class="mt-2 pl-4 pr-2 space-y-1">
+          <a href="{% url 'sales_report' %}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if active_section == 'sales_report' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %}">
+            <i class="fas fa-chart-pie mr-3 {% if active_section == 'sales_report' %}text-white{% else %}text-gray-400 group-hover:text-white{% endif %}"></i>
+            Menu Item Sales
+          </a>
+          <a href="{% url 'cashier_sales_report' %}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if active_section == 'cashier_sales_report' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %}">
+            <i class="fas fa-user-tag mr-3 {% if active_section == 'cashier_sales_report' %}text-white{% else %}text-gray-400 group-hover:text-white{% endif %}"></i>
+            Cashier Sales
+          </a>
+          <!-- <a href="{% url 'comprehensive_sales_report' %}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if active_section == 'comprehensive_sales_report' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %}">
+            <i class="fas fa-chart-line mr-3 {% if active_section == 'comprehensive_sales_report' %}text-white{% else %}text-gray-400 group-hover:text-white{% endif %}"></i>
+            Comprehensive Report
+          </a> -->
+          <a href="{% url 'export_sales_report' %}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {% if active_section == 'export_sales_report' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %}">
+            <i class="fas fa-file-export mr-3 {% if active_section == 'export_sales_report' %}text-white{% else %}text-gray-400 group-hover:text-white{% endif %}"></i>
+            Export Sales Report
+          </a>
+        </div>
+      </div>
+
       <a href="{% url 'inventory_overview' %}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if active_section == 'inventory_overview' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %} mt-1">
         <svg class="mr-3 h-6 w-6 {% if active_section == 'inventory_overview' %}text-white{% else %}text-gray-400 group-hover:text-white{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
@@ -168,23 +265,8 @@
 
       <div class="border-t border-gray-700 my-4"></div>
 
-      <!-- Admin Dashboard -->
-      <a href="{% url 'admin_dashboard' %}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-700 mt-1">
-        <svg class="mr-3 h-6 w-6 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-        </svg>
-        Admin Panel
-      </a>
 
-      <!-- Staff Management -->
-      <a href="{% url 'staff_list' %}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-300 hover:text-white hover:bg-gray-700 mt-1">
-        <svg class="mr-3 h-6 w-6 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-        </svg>
-        Manage Staff
-      </a>
-
+  
       <!-- My Profile -->
       <a href="{% url 'manager_profile_edit' %}" class="group flex items-center px-2 py-2 text-base font-medium rounded-md {% if active_section == 'profile' %}text-white bg-gray-900{% else %}text-gray-300 hover:text-white hover:bg-gray-700{% endif %} mt-1 relative border border-food-gold">
         <svg class="mr-3 h-6 w-6 {% if active_section == 'profile' %}text-white{% else %}text-food-gold group-hover:text-white{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,6 +340,11 @@
 
 <!-- Django Messages -->
 {% include 'components/messages/messages.html' %}
+
+<!-- Report Utilities -->
+{% if active_section == 'sales_report' or active_section == 'comprehensive_sales_report' or active_section == 'cashier_performance_report' or active_section == 'export_sales_report' %}
+<script src="{% static 'js/report_utils.js' %}"></script>
+{% endif %}
 
 {% block extra_scripts %}{% endblock extra_scripts %}
 </body>
