@@ -30,6 +30,9 @@
                 <a href="{% url 'orders' %}" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 flex items-center">
                     <i class="fas fa-arrow-left mr-2"></i> Back to Orders
                 </a>
+                <a href="{% url 'admin_order_template' order.id %}" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 flex items-center">
+                    <i class="fas fa-file-alt mr-2"></i> Admin Template
+                </a>
                 {% if order.status != 'CANCELLED' and order.status != 'COMPLETED' %}
                 <a href="{% url 'view_order' order.id %}" class="px-4 py-2 bg-food-gold hover:bg-food-gold-light text-gray-900 rounded-lg transition-colors duration-200 flex items-center">
                     <i class="fas fa-cogs mr-2"></i> Manage in Cashier

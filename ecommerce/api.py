@@ -1,6 +1,8 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
-from .models import MenuItem, Category, Reservation
+from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required
+from .models import MenuItem, Category, Reservation, Order, OrderItem, Payment
 
 @require_GET
 def menu_items_api(request):
@@ -76,5 +78,38 @@ def reservation_detail_api(request, reservation_id):
         return JsonResponse(reservation_data)
     except Reservation.DoesNotExist:
         return JsonResponse({'error': 'Reservation not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_GET
+def order_details_api(request, order_id):
+    """API endpoint to get order details for modal view"""
+    try:
+        # Check if user has permission to view all orders
+        if not request.user.is_staff and not request.user.is_superuser:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+
+        # Get the order
+        order = Order.objects.get(id=order_id)
+        order_items = order.order_items.all()
+
+        # Get payment information if available
+        payment = Payment.objects.filter(order=order).first()
+
+        # Render the order details template
+        html_content = render_to_string('admin/order_details_modal.html', {
+            'order': order,
+            'order_items': order_items,
+            'payment': payment,
+        })
+
+        return JsonResponse({
+            'html': html_content,
+            'order_id': order.id
+        })
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'Order not found'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

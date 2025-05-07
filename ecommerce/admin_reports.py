@@ -4,11 +4,13 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Avg, F
 from django.db.models.functions import TruncDate, TruncHour, TruncMonth, TruncWeek
 from django.utils import timezone
+from django.http import HttpResponse
 from .models import Order, OrderItem, Category
+from .utils.pdf_utils import generate_sales_report_pdf
 
 @login_required
 def admin_sales_report(request):
-    """Comprehensive sales report for admin with filtering and printing options"""
+    """Sales report for admin with filtering and printing options"""
     # Get date range
     today = timezone.now().date()
     date_from = request.GET.get('date_from', (today - datetime.timedelta(days=30)).isoformat())
@@ -167,6 +169,38 @@ def admin_sales_report(request):
 
     # No payment methods filter since it doesn't exist in the Order model
     payment_methods = []
+
+    # Check if export to PDF is requested
+    if request.GET.get('export_pdf'):
+        # Get payment method sales (using order_type as a substitute since payment_method doesn't exist)
+        payment_method_sales = orders.values(
+            'order_type'
+        ).annotate(
+            count=Count('id'),
+            total=Sum('total_amount')
+        ).order_by('-total')
+
+        # Get order type sales
+        order_type_sales = orders.values(
+            'order_type'
+        ).annotate(
+            count=Count('id'),
+            total=Sum('total_amount')
+        ).order_by('-total')
+
+        # Generate PDF
+        return generate_sales_report_pdf(
+            datetime.datetime.strptime(date_from, '%Y-%m-%d').date() if isinstance(date_from, str) else date_from,
+            datetime.datetime.strptime(date_to, '%Y-%m-%d').date() if isinstance(date_to, str) else date_to,
+            item_sales,
+            total_revenue,
+            total_quantity,
+            payment_method_sales,
+            order_type_sales,
+            category_sales,
+            order_count,
+            "Admin Report"
+        )
 
     context = {
         'date_from': date_from,

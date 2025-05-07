@@ -1055,6 +1055,96 @@ def admin_view_order(request, order_id):
 
 
 @login_required
+def admin_order_template(request, order_id):
+    """View order using the admin template"""
+    # Check if user has permission to view all orders
+    if not request.user.is_staff:
+        return redirect('dashboard')
+
+    order = get_object_or_404(Order, id=order_id)
+    order_items = order.order_items.all()
+
+    # Get payment information if available
+    payment = Payment.objects.filter(order=order).first()
+
+    context = {
+        'order': order,
+        'order_items': order_items,
+        'payment': payment,
+        'active_section': 'orders'
+    }
+
+    return render(request, 'admin/order_template.html', context)
+
+
+@login_required
+def edit_order(request, order_id):
+    """Edit an existing order (admin/staff view)"""
+    # Check if user has permission to edit orders
+    if not request.user.is_staff:
+        return redirect('dashboard')
+
+    order = get_object_or_404(Order, id=order_id)
+
+    # Only allow editing of pending orders
+    if order.status != 'PENDING':
+        messages.warning(request, 'Only pending orders can be edited.')
+        return redirect('admin_view_order', order_id=order.id)
+
+    order_items = order.order_items.all()
+
+    # Get payment information if available
+    payment = Payment.objects.filter(order=order).first()
+
+    if request.method == 'POST':
+        # Process form submission
+        try:
+            with transaction.atomic():
+                # Update order details
+                order.customer_name = request.POST.get('customer_name', order.customer_name)
+                order.customer_phone = request.POST.get('customer_phone', order.customer_phone)
+                order.order_type = request.POST.get('order_type', order.order_type)
+                order.payment_method = request.POST.get('payment_method', order.payment_method)
+                order.table_number = request.POST.get('table_number', order.table_number)
+                order.number_of_guests = int(request.POST.get('number_of_guests', order.number_of_guests))
+                order.special_instructions = request.POST.get('special_instructions', order.special_instructions)
+
+                # Handle delivery address for delivery orders
+                if order.order_type == 'DELIVERY':
+                    order.delivery_address = request.POST.get('delivery_address', order.delivery_address)
+                    order.contact_number = request.POST.get('contact_number', order.contact_number)
+
+                # Save the updated order
+                order.save()
+
+                # Log the activity
+                StaffActivity.objects.create(
+                    staff=request.user,
+                    action='UPDATE_ORDER',
+                    details=f"Updated order #{order.id} details",
+                    ip_address=request.META.get('REMOTE_ADDR', '')
+                )
+
+                messages.success(request, f'Order #{order.id} has been updated successfully.')
+                return redirect('admin_view_order', order_id=order.id)
+
+        except Exception as e:
+            messages.error(request, f'Error updating order: {str(e)}')
+
+    # Prepare context for the template
+    context = {
+        'order': order,
+        'order_items': order_items,
+        'payment': payment,
+        'order_type_choices': Order.ORDER_TYPE_CHOICES,
+        'payment_method_choices': Order.PAYMENT_METHOD_CHOICES,
+        'active_section': 'orders'
+    }
+
+    return render(request, 'accounts/edit_order.html', context)
+
+
+@login_required
 def make_reservation(request):
     """Allow registered customers to make a reservation with table selection and menu items"""
     # Get available tables
@@ -2488,3 +2578,28 @@ def admin_dashboard(request):
 
 
 # Removed cashier_add_menu_items_to_reservation view as part of simplifying the reservation process
+
+
+@login_required
+def order_monitoring(request):
+    """Admin order monitoring view - displays all orders for monitoring purposes"""
+    # Check if user has permission to view all orders
+    if not request.user.is_superuser and not (hasattr(request.user, 'staff_profile') and request.user.staff_profile.role == 'ADMIN'):
+        return redirect('dashboard')
+
+    # Get all orders
+    orders = Order.objects.all().order_by('-created_at')
+
+    # Filter by status if provided
+    status_filter = request.GET.get('status')
+    if status_filter and status_filter != 'all':
+        orders = orders.filter(status=status_filter)
+
+    context = {
+        'orders': orders,
+        'status_filter': status_filter or 'all',
+        'status_choices': Order.STATUS_CHOICES,
+        'active_section': 'order_monitoring'
+    }
+
+    return render(request, 'admin/order_monitoring.html', context)

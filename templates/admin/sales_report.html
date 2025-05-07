@@ -4,7 +4,7 @@
 
 {% block title %}Sales Report - 5th Avenue Grill and Restobar{% endblock title %}
 
-{% block page_title %}Comprehensive Sales Report{% endblock page_title %}
+{% block page_title %}Sales Report{% endblock page_title %}
 {% block page_subtitle %}Detailed sales analysis with filtering and printing options{% endblock page_subtitle %}
 
 {% block extra_css %}
@@ -143,8 +143,8 @@
                 <a href="{% url 'admin_sales_report' %}" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition duration-200">
                     <i class="fas fa-times mr-2"></i> Clear Filters
                 </a>
-                <button type="button" onclick="window.print()" class="ml-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200">
-                    <i class="fas fa-print mr-2"></i> Print Report
+                <button type="button" id="exportPdfBtn" class="ml-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200">
+                    <i class="fas fa-file-pdf mr-2"></i> Export PDF
                 </button>
                 <button type="button" id="exportCSV" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition duration-200">
                     <i class="fas fa-file-csv mr-2"></i> Export CSV
@@ -365,6 +365,30 @@
                     row.style.display = 'none';
                 }
             });
+        });
+
+        // Export PDF button
+        document.getElementById('exportPdfBtn').addEventListener('click', function() {
+            // Get current form parameters
+            const form = document.querySelector('form');
+            const formData = new FormData(form);
+            formData.append('export_pdf', 'true');
+
+            // Build URL with parameters
+            let url = "{% url 'admin_sales_report' %}?";
+            for (const [key, value] of formData.entries()) {
+                if (value) { // Only add non-empty values
+                    url += `${key}=${encodeURIComponent(value)}&`;
+                }
+            }
+
+            // Remove trailing & if present
+            if (url.endsWith('&')) {
+                url = url.slice(0, -1);
+            }
+
+            // Open in new window
+            window.open(url, '_blank');
         });
 
         // Export to CSV functionality

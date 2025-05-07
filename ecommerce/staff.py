@@ -110,6 +110,7 @@ def add_staff(request):
             profile.emergency_phone = emergency_phone
             profile.notes = notes
             profile.created_by = request.user
+            profile.is_active_staff = True  # Ensure this is set to True for all staff members
             profile.save()
 
             # Log activity

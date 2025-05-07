@@ -14,10 +14,10 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-gray-400 text-sm font-medium">Total Inventory Value</h3>
-                    <p class="text-2xl font-bold mt-1 text-green-400">${{ total_inventory_value|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold mt-1 text-green-400">₱{{ total_inventory_value|floatformat:2 }}</p>
                 </div>
                 <div class="bg-green-900 p-3 rounded-full">
-                    <i class="fas fa-dollar-sign text-green-400 text-xl"></i>
+                    <i class="fas fa-peso-sign text-green-400 text-xl"></i>
                 </div>
             </div>
         </div>
@@ -256,9 +256,9 @@
                         <td class="py-3">{{ item.category.name|default:"No Category" }}</td>
                         <td class="py-3">{{ item.current_stock }}</td>
                         <td class="py-3">{{ item.stock_alert_threshold }}</td>
-                        <td class="py-3">${{ item.cost_price|floatformat:2 }}</td>
-                        <td class="py-3">${{ item.price|floatformat:2 }}</td>
-                        <td class="py-3">${{ item.current_stock|mul:item.cost_price|floatformat:2 }}</td>
+                        <td class="py-3">₱{{ item.cost_price|floatformat:2 }}</td>
+                        <td class="py-3">₱{{ item.price|floatformat:2 }}</td>
+                        <td class="py-3">₱{{ item.current_stock|mul:item.cost_price|floatformat:2 }}</td>
                         <td class="py-3">
                             {% if item.current_stock == 0 %}
                             <span class="bg-red-900 text-red-300 text-xs px-2 py-1 rounded-full">Out of Stock</span>
@@ -352,7 +352,7 @@
                                 const value = context.parsed || 0;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = ((value / total) * 100).toFixed(1);
-                                return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                                return `${label}: ₱${value.toFixed(2)} (${percentage}%)`;
                             }
                         }
                     }

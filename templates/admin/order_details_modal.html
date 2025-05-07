@@ -1,0 +1,180 @@
+{% load custom_filters %}
+{% load math_filters %}
+
+<div class="space-y-6">
+    <!-- Order Status -->
+    <div class="bg-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="text-sm text-gray-400">Status</div>
+                <div class="font-medium">
+                    <span class="px-2 py-1 rounded-full text-xs
+                        {% if order.status == 'PENDING' %}bg-yellow-900/70 text-yellow-300
+                        {% elif order.status == 'PREPARING' %}bg-blue-900/70 text-blue-300
+                        {% elif order.status == 'READY' %}bg-green-900/70 text-green-300
+                        {% elif order.status == 'COMPLETED' %}bg-gray-700/70 text-gray-300
+                        {% elif order.status == 'CANCELLED' %}bg-red-900/70 text-red-300{% endif %}">
+                        {{ order.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            <div>
+                <div class="text-sm text-gray-400">Payment</div>
+                <div class="font-medium">
+                    <span class="px-2 py-1 rounded-full text-xs
+                        {% if order.payment_status == 'PAID' %}bg-green-900/70 text-green-300
+                        {% elif order.payment_status == 'PARTIALLY_PAID' %}bg-yellow-900/70 text-yellow-300
+                        {% else %}bg-red-900/70 text-red-300{% endif %}">
+                        {{ order.get_payment_status_display }}
+                    </span>
+                </div>
+            </div>
+            <div>
+                <div class="text-sm text-gray-400">Date</div>
+                <div class="font-medium">{{ order.created_at|date:"M d, Y" }}</div>
+            </div>
+            <div>
+                <div class="text-sm text-gray-400">Time</div>
+                <div class="font-medium">{{ order.created_at|time:"g:i A" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Info -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Customer Info -->
+        <div class="bg-gray-700 rounded-lg p-4">
+            <h3 class="font-bold mb-3">Customer Information</h3>
+            <div class="space-y-2">
+                <div>
+                    <div class="text-sm text-gray-400">Name</div>
+                    <div class="font-medium">
+                        {% if order.user %}
+                            {{ order.user.get_full_name|default:order.user.username }}
+                        {% else %}
+                            {{ order.customer_name|default:"Guest" }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-400">Contact</div>
+                    <div class="font-medium">
+                        {% if order.contact_number %}
+                            {{ order.contact_number }}
+                        {% elif order.user.customer_profile.phone %}
+                            {{ order.user.customer_profile.phone }}
+                        {% else %}
+                            Not provided
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-400">Order Type</div>
+                    <div class="font-medium">{{ order.get_order_type_display }}</div>
+                </div>
+                {% if order.order_type == 'DELIVERY' %}
+                <div>
+                    <div class="text-sm text-gray-400">Delivery Address</div>
+                    <div class="font-medium">{{ order.delivery_address|default:"Not provided" }}</div>
+                </div>
+                {% elif order.order_type == 'DINE_IN' %}
+                <div>
+                    <div class="text-sm text-gray-400">Table Number</div>
+                    <div class="font-medium">{{ order.table_number|default:"Not assigned" }}</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-400">Number of Guests</div>
+                    <div class="font-medium">{{ order.number_of_guests }} people</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Payment Info -->
+        <div class="bg-gray-700 rounded-lg p-4">
+            <h3 class="font-bold mb-3">Payment Information</h3>
+            <div class="space-y-2">
+                <div>
+                    <div class="text-sm text-gray-400">Payment Method</div>
+                    <div class="font-medium">{{ order.get_payment_method_display }}</div>
+                </div>
+                {% if payment %}
+                <div>
+                    <div class="text-sm text-gray-400">Payment Date</div>
+                    <div class="font-medium">{{ payment.created_at|date:"M d, Y" }} at {{ payment.created_at|time:"g:i A" }}</div>
+                </div>
+                {% endif %}
+                <div class="border-t border-gray-600 pt-2 mt-2">
+                    <div class="flex justify-between">
+                        <div class="text-sm text-gray-400">Subtotal</div>
+                        <div class="font-medium">₱{{ order.total_amount|floatformat:2 }}</div>
+                    </div>
+                    {% if order.tax_amount > 0 %}
+                    <div class="flex justify-between mt-1">
+                        <div class="text-sm text-gray-400">Tax</div>
+                        <div class="font-medium">₱{{ order.tax_amount|floatformat:2 }}</div>
+                    </div>
+                    {% endif %}
+                    {% if order.delivery_fee > 0 %}
+                    <div class="flex justify-between mt-1">
+                        <div class="text-sm text-gray-400">Delivery Fee</div>
+                        <div class="font-medium">₱{{ order.delivery_fee|floatformat:2 }}</div>
+                    </div>
+                    {% endif %}
+                    {% if order.discount_amount > 0 %}
+                    <div class="flex justify-between mt-1">
+                        <div class="text-sm text-gray-400">Discount</div>
+                        <div class="font-medium text-green-400">-₱{{ order.discount_amount|floatformat:2 }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between mt-2 pt-2 border-t border-gray-600">
+                        <div class="font-bold">Total</div>
+                        <div class="font-bold text-food-gold">₱{{ order.grand_total|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Items -->
+    <div class="bg-gray-700 rounded-lg p-4">
+        <h3 class="font-bold mb-3">Order Items</h3>
+        <div class="space-y-3">
+            {% for item in order_items %}
+            <div class="flex justify-between items-center p-2 {% if not forloop.last %}border-b border-gray-600 pb-3{% endif %}">
+                <div class="flex items-center">
+                    <div class="mr-3 text-center w-8">
+                        <span class="font-medium">{{ item.quantity }}x</span>
+                    </div>
+                    <div>
+                        <div class="font-medium">{{ item.menu_item.name }}</div>
+                        <div class="text-sm text-gray-400">₱{{ item.price|floatformat:2 }} each</div>
+                        {% if item.special_instructions %}
+                        <div class="text-xs text-gray-400 mt-1">
+                            <i class="fas fa-comment-alt text-xs mr-1 text-gray-500"></i> {{ item.special_instructions }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="font-medium">₱{{ item.subtotal|floatformat:2 }}</div>
+            </div>
+            {% empty %}
+            <div class="text-center text-gray-400 py-4">
+                No items in this order
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-between">
+        <a href="{% url 'admin_view_order' order.id %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 flex items-center">
+            <i class="fas fa-external-link-alt mr-2"></i> View Full Details
+        </a>
+        {% if order.status == 'PENDING' %}
+        <a href="{% url 'edit_order' order.id %}" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200 flex items-center">
+            <i class="fas fa-edit mr-2"></i> Edit Order
+        </a>
+        {% endif %}
+    </div>
+</div>

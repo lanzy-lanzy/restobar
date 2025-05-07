@@ -3,13 +3,14 @@ from django.urls import path
 from .views import (
     home, filter_menu, menu, add_to_cart, view_cart, update_cart_item, checkout, gcash_payment, order_confirmation,
     user_login, user_logout, user_register, user_dashboard, add_menu_item, menu_items_list, categories_list,
-    orders_list, admin_view_order, reservations_list, reviews_list, user_settings,
+    orders_list, admin_view_order, admin_order_template, edit_order, reservations_list, reviews_list, user_settings,
     edit_menu_item, delete_menu_item, edit_category, delete_category,
     customer_dashboard, my_orders, my_reviews, profile, change_password,
     make_reservation, reservation_payment, my_reservations, edit_reservation, cancel_reservation, update_reservation_status,
-    customer_cancel_order, view_customer_order, order_details_api, track_preparation, view_reservation, reservation_feedback
+    customer_cancel_order, view_customer_order, order_details_api, track_preparation, view_reservation, reservation_feedback,
+    order_monitoring
 )
-from .api import menu_items_api, reservation_detail_api
+from .api import menu_items_api, reservation_detail_api, order_details_api
 from .admin import admin_dashboard
 from .inventory import (
     inventory_dashboard, add_inventory, inventory_history,
@@ -52,6 +53,7 @@ urlpatterns = [
     path('filter-menu/', filter_menu, name='filter_menu'),
     path('api/menu-items/', menu_items_api, name='menu_items_api'),
     path('api/reservations/<int:reservation_id>/', reservation_detail_api, name='reservation_detail_api'),
+    path('api/order-details/<int:order_id>/', order_details_api, name='order_details_api'),
     path('add-to-cart/<int:item_id>/', add_to_cart, name='add_to_cart'),
     path('cart/', view_cart, name='view_cart'),
     path('update-cart-item/<int:item_id>/', update_cart_item, name='update_cart_item'),
@@ -91,6 +93,9 @@ urlpatterns = [
     # Orders Management
     path('dashboard/orders/', orders_list, name='orders'),
     path('dashboard/orders/<int:order_id>/', admin_view_order, name='admin_view_order'),
+    path('dashboard/orders/<int:order_id>/edit/', edit_order, name='edit_order'),
+    path('dashboard/orders/<int:order_id>/template/', admin_order_template, name='admin_order_template'),
+    path('dashboard/order-monitoring/', order_monitoring, name='order_monitoring'),
 
     # Reservations Management
     path('dashboard/reservations/', reservations_list, name='reservations'),

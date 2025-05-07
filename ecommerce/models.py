@@ -949,8 +949,8 @@ def create_user_profiles(sender, instance, created, **kwargs):
             # This is needed because some code may expect it to exist
             StaffProfile.objects.create(
                 user=instance,
-                role='CUSTOMER',  # Using CASHIER as it's the default, but this user isn't actually staff
-                is_active_staff=False
+                role='CUSTOMER',  # Mark as CUSTOMER role
+                is_active_staff=False  # Ensure is_active_staff is False for customers
             )
 
 
