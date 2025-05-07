@@ -18,9 +18,9 @@ def get_item(dictionary, key):
 
 @register.filter
 def currency(value):
-    """Format value as Philippine Peso"""
+    """Format value as Philippine Peso with thousand separators and decimal places"""
     try:
-        return f"₱{float(value):.2f}"
+        return f"₱{float(value):,.2f}"
     except (ValueError, TypeError):
         return value
 

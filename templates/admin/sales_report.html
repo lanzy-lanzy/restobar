@@ -83,6 +83,9 @@
 {% block content %}
 <!-- Print Header (only visible when printing) -->
 <div class="print-only print-header">
+    <div class="flex justify-center mb-4">
+        <img src="/static/logo/5th_avenue_logo.jpg" alt="5th Avenue Logo" class="h-24 w-24 rounded-full object-cover border-2 border-gray-800">
+    </div>
     <h1>5th Avenue Grill and Restobar - Sales Report</h1>
     <p>Period: {{ date_from }} to {{ date_to }}</p>
     <p>Generated on: {% now "F d, Y H:i" %}</p>

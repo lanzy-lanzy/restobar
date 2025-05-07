@@ -260,30 +260,32 @@
                                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                                         ₱
                                     </span>
-                                    <input type="number" name="cash_on_hand" id="cash_on_hand" x-model="cashOnHand" step="0.01" min="0"
-                                           @input="calculateChange()"
+                                    <input type="text" name="cash_on_hand" id="cash_on_hand"
+                                           x-model="formattedCashOnHand"
+                                           @input="handleCashInput($event.target.value)"
                                            class="w-full pl-8 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-food-gold">
+                                    <input type="hidden" name="actual_cash_on_hand" :value="cashOnHand">
                                 </div>
-                                <button type="button" @click="cashOnHand = Math.ceil(calculateTotal())"
+                                <button type="button" @click="cashOnHand = Math.ceil(calculateTotal()); formattedCashOnHand = cashOnHand.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2}); calculateChange()"
                                         class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg">
                                     Exact
                                 </button>
-                                <button type="button" @click="cashOnHand = Math.ceil(calculateTotal() / 100) * 100"
+                                <button type="button" @click="cashOnHand = Math.ceil(calculateTotal() / 100) * 100; formattedCashOnHand = cashOnHand.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2}); calculateChange()"
                                         class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg">
                                     ₱100
                                 </button>
-                                <button type="button" @click="cashOnHand = Math.ceil(calculateTotal() / 500) * 500"
+                                <button type="button" @click="cashOnHand = Math.ceil(calculateTotal() / 500) * 500; formattedCashOnHand = cashOnHand.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2}); calculateChange()"
                                         class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg">
                                     ₱500
                                 </button>
                             </div>
                             <div class="mt-2 flex justify-between items-center" x-show="cashOnHand >= calculateTotal()">
                                 <span class="text-sm text-gray-400">Change:</span>
-                                <span class="text-lg font-bold text-green-400" x-text="'₱' + (cashOnHand - calculateTotal()).toFixed(2)"></span>
+                                <span class="text-lg font-bold text-green-400" x-text="'₱' + (cashOnHand - calculateTotal()).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
                             </div>
                             <div class="mt-2 flex justify-between items-center" x-show="cashOnHand > 0 && cashOnHand < calculateTotal()">
                                 <span class="text-sm text-gray-400">Still needed:</span>
-                                <span class="text-lg font-bold text-red-400" x-text="'₱' + (calculateTotal() - cashOnHand).toFixed(2)"></span>
+                                <span class="text-lg font-bold text-red-400" x-text="'₱' + (calculateTotal() - cashOnHand).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
                             </div>
                         </div>
 
@@ -403,7 +405,7 @@
                                         </div>
                                     </div>
                                     <div class="text-right">
-                                        <div class="font-medium" x-text="'₱' + (item.price * item.quantity).toFixed(2)"></div>
+                                        <div class="font-medium" x-text="'₱' + (item.price * item.quantity).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></div>
                                         <button type="button" @click="removeItem(index)" class="text-red-400 hover:text-red-300 text-sm">
                                             <i class="fas fa-times"></i> Remove
                                         </button>
@@ -415,7 +417,7 @@
                         <div class="border-t border-gray-800 pt-4">
                             <div class="flex justify-between font-bold text-lg">
                                 <span>Total:</span>
-                                <span x-text="'₱' + calculateTotal().toFixed(2)"></span>
+                                <span x-text="'₱' + calculateTotal().toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
                             </div>
 
                             <!-- Split Bill Preview (if enabled) -->
@@ -423,7 +425,7 @@
                                 <div class="text-sm text-gray-400 mb-2">Split Bill Preview:</div>
                                 <div x-show="splitType === 'equal'" class="flex justify-between text-sm">
                                     <span x-text="splitWays + ' ways equal split'"></span>
-                                    <span x-text="'₱' + (calculateTotal() / splitWays).toFixed(2) + ' per person'"></span>
+                                    <span x-text="'₱' + (calculateTotal() / splitWays).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' per person'"></span>
                                 </div>
                                 <div x-show="splitType === 'custom'" class="text-sm text-gray-400">
                                     Custom split will be configured after order creation
@@ -563,7 +565,7 @@
                 </div>
 
                 <div class="flex justify-between items-center pt-2">
-                    <span class="font-bold">Total: <span x-text="'₱' + (selectedItem.price * selectedItem.quantity).toFixed(2)"></span></span>
+                    <span class="font-bold">Total: <span x-text="'₱' + (selectedItem.price * selectedItem.quantity).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span></span>
                     <div class="flex space-x-2">
                         <button type="button" @click="showItemModal = false"
                                 class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg">
@@ -598,6 +600,7 @@
             serverAssigned: '',
             estimatedDiningTime: 60,
             cashOnHand: 0,
+            formattedCashOnHand: '0.00',
             splitBill: false,
             splitType: 'equal',
             splitWays: 2,
@@ -613,6 +616,14 @@
             },
             searchQuery: '',
             selectedCategory: '',
+
+            init() {
+                // Initialize formatted cash value
+                this.formattedCashOnHand = this.cashOnHand.toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            },
 
             openItemModal(id, name, price) {
                 // Set the selected item
@@ -661,6 +672,26 @@
 
             calculateTotal() {
                 return this.orderItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+            },
+
+            handleCashInput(value) {
+                // Remove all non-numeric characters except decimal point
+                const numericValue = value.replace(/[^\d.]/g, '');
+
+                // Parse the numeric value
+                const parsedValue = parseFloat(numericValue) || 0;
+
+                // Update the actual cash value
+                this.cashOnHand = parsedValue;
+
+                // Format the display value with thousand separators and decimal places
+                this.formattedCashOnHand = parsedValue.toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+
+                // Calculate change
+                this.calculateChange();
             },
 
             calculateChange() {

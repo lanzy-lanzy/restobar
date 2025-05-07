@@ -121,10 +121,6 @@
                         <span class="text-gray-400">Subtotal:</span>
                         <span>₱{{ order.total_amount|floatformat:2 }}</span>
                     </div>
-                    <div class="flex justify-between mb-2">
-                        <span class="text-gray-400">Tax:</span>
-                        <span>₱{{ order.tax_amount|floatformat:2 }}</span>
-                    </div>
                     {% if order.delivery_fee > 0 %}
                     <div class="flex justify-between mb-2">
                         <span class="text-gray-400">Delivery Fee:</span>
@@ -139,7 +135,7 @@
                     {% endif %}
                     <div class="flex justify-between font-bold text-lg mt-4 pt-4 border-t border-gray-700">
                         <span>Total:</span>
-                        <span class="text-food-gold">₱{{ order.grand_total|floatformat:2 }}</span>
+                        <span class="text-food-gold">₱{{ order.total_amount|floatformat:2 }}</span>
                     </div>
                 </div>
 

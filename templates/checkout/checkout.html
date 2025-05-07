@@ -45,17 +45,9 @@
                         </div>
 
                         <div class="border-t border-gray-700 pt-4">
-                            <div class="flex justify-between mb-2">
-                                <span class="text-gray-400">Subtotal:</span>
-                                <span>₱{{ subtotal|floatformat:2 }}</span>
-                            </div>
-                            <div class="flex justify-between mb-2">
-                                <span class="text-gray-400">Tax (10%):</span>
-                                <span>₱{{ tax|floatformat:2 }}</span>
-                            </div>
-                            <div class="flex justify-between font-bold text-lg mt-4">
+                            <div class="flex justify-between font-bold text-lg">
                                 <span>Total:</span>
-                                <span class="text-food-gold">₱{{ total|floatformat:2 }}</span>
+                                <span class="text-food-gold">₱{{ subtotal|floatformat:2 }}</span>
                             </div>
                         </div>
                     </div>
